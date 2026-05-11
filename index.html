@@ -1056,6 +1056,11 @@
       <button class="btn btn-secondary btn-sm" onclick="resetJardInputs()" style="width:auto;color:var(--red);font-size:12px">تصفير</button>
     </div>
 
+    <!-- info note -->
+    <div id="jardReviewNote" style="display:none;padding:8px 14px;background:#fff3e0;border-bottom:1px solid #ffe0b2;font-size:12px;color:#e65100;font-weight:600">
+      👁️ وضع المراجعة فقط — لن يُحدَّث المخزن
+    </div>
+
     <!-- Table header -->
     <div id="jardTableHeader" class="jard-header-row">
       <span>المنتج</span>
@@ -1076,7 +1081,7 @@
       <span id="jTotFinal">0</span>
     </div>
 
-    <div style="padding:14px;display:flex;gap:10px">
+    <div id="jardActions" style="padding:14px;display:flex;gap:10px">
       <button class="btn btn-primary" style="flex:2" onclick="saveJard()">💾 حفظ وتحديث المخزن</button>
       <button class="btn btn-secondary" style="flex:1" onclick="resetJardInputs()">مسح</button>
     </div>
@@ -1169,15 +1174,19 @@
   <div class="card">
     <div class="card-header">
       <h2>📦 تعديل المنتجات</h2>
-      <button class="btn btn-secondary btn-sm" onclick="saveProductSettings()" style="width:auto;color:var(--green);font-weight:700;background:rgba(255,255,255,0.9)">💾 حفظ</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-secondary btn-sm" onclick="addNewProduct()" style="width:auto;color:var(--gold);font-weight:700;background:rgba(255,255,255,0.9)">➕ إضافة</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveProductSettings()" style="width:auto;color:var(--green);font-weight:700;background:rgba(255,255,255,0.9)">💾 حفظ</button>
+      </div>
     </div>
     <div style="overflow-x:auto">
-      <div style="min-width:420px">
-        <div style="display:grid;grid-template-columns:1.6fr 1fr 0.7fr 0.7fr;gap:4px;padding:8px 10px;background:var(--gray);font-size:11px;font-weight:700;color:var(--text-light);text-align:center">
+      <div style="min-width:460px">
+        <div style="display:grid;grid-template-columns:1.6fr 1fr 0.7fr 0.7fr 32px;gap:4px;padding:8px 10px;background:var(--gray);font-size:11px;font-weight:700;color:var(--text-light);text-align:center">
           <span style="text-align:right">اسم المنتج</span>
           <span>السعر (ج)</span>
           <span>باكو/كرتونة</span>
           <span>وزن الباكو</span>
+          <span></span>
         </div>
         <div id="productSettingsList"></div>
       </div>
@@ -1879,9 +1888,27 @@ function resetAll() {
       invCounter = 1;
       jardHistory = [];
       generalSettings = { company:'الوردة للدخان', agent:'عادل صابر', region:'كوم أمبو - أدفو' };
-      PRODUCTS.forEach((p, i) => {
-        const defaults = [{name:'قص 20',price:460},{name:'قص 30',price:690},{name:'قص 40',price:736},{name:'قص 50',price:920},{name:'قص 100',price:1104},{name:'قص 140',price:1076},{name:'قص 180',price:1376},{name:'قص بلاستيك 190',price:1456},{name:'أزاد 100',price:792},{name:'أزاد 1ك جالون',price:300},{name:'جمل 100',price:736},{name:'تاج 50',price:552},{name:'تاج 80',price:588.8},{name:'مدغة الوردة',price:4800}];
-        if (defaults[i]) { p.name = defaults[i].name; p.price = defaults[i].price; }
+      const resetDefaults = [
+        {name:'قص 20',price:460,pakPerCart:25,weight:'90gm'},
+        {name:'قص 30',price:690,pakPerCart:25,weight:'140gm'},
+        {name:'قص 40',price:736,pakPerCart:20,weight:'190gm'},
+        {name:'قص 50',price:920,pakPerCart:20,weight:'240gm'},
+        {name:'قص 100',price:1104,pakPerCart:12,weight:'500gm'},
+        {name:'قص 140',price:1076,pakPerCart:8,weight:'750gm'},
+        {name:'قص 180',price:1376,pakPerCart:8,weight:'1kg'},
+        {name:'قص بلاستيك 190',price:1456,pakPerCart:8,weight:'1kg'},
+        {name:'أزاد 100',price:792,pakPerCart:24,weight:'100gm'},
+        {name:'أزاد 1ك جالون',price:300,pakPerCart:1,weight:'1kg'},
+        {name:'جمل 100',price:736,pakPerCart:8,weight:'700gm'},
+        {name:'تاج 50',price:552,pakPerCart:12,weight:'380gm'},
+        {name:'تاج 80',price:588.8,pakPerCart:8,weight:'600gm'},
+        {name:'مدغة الوردة',price:4800,pakPerCart:1,weight:'—'}
+      ];
+      while (PRODUCTS.length > 0) PRODUCTS.pop();
+      while (PROD_META.length > 0) PROD_META.pop();
+      resetDefaults.forEach(d => {
+        PRODUCTS.push({ name: d.name, price: d.price });
+        PROD_META.push({ pakPerCart: d.pakPerCart, weight: d.weight });
       });
       applyGeneralSettings();
       renderPricesList();
@@ -1923,6 +1950,9 @@ function setJardMode(mode) {
   document.getElementById('jardModeLoad').style.flex = '1';
   document.getElementById('jardModeJard').style.flex = '1';
   document.getElementById('jardCardTitle').textContent = isLoad ? '🚛 تحميل السيارة' : '📦 جرد نهاية اليوم';
+  // show review note & hide save for jard mode
+  document.getElementById('jardReviewNote').style.display = isLoad ? 'none' : 'block';
+  document.getElementById('jardActions').style.display    = isLoad ? 'flex' : 'none';
   renderJardList();
 }
 
@@ -1952,13 +1982,9 @@ function renderJardStats() {
 
 function renderJardList() {
   let html = '';
-  let totCart = 0, totPak = 0, totFinal = 0;
 
   PRODUCTS.forEach((p, i) => {
     const meta = PROD_META[i];
-    const isLoad = jardMode === 'load';
-    // For load: كرتونة + باكو إضافية → إجمالي كرتونة
-    // For jard: كرتونة موجودة + باكو موجودة → إجمالي
     html += `
       <div class="jard-row">
         <div>
@@ -1967,9 +1993,9 @@ function renderJardList() {
         </div>
         <div class="jard-center">${meta.pakPerCart}</div>
         <input type="number" class="jard-input" id="jcart_${i}" value="0" min="0"
-               oninput="updateJardRow(${i})" inputmode="numeric" placeholder="0">
+               oninput="onCartChange(${i})" inputmode="numeric" placeholder="0">
         <input type="number" class="jard-input" id="jpak_${i}" value="0" min="0"
-               oninput="updateJardRow(${i})" inputmode="numeric" placeholder="0">
+               oninput="onPakChange(${i})" inputmode="numeric" placeholder="0">
         <div class="jard-result" id="jresult_${i}">0</div>
       </div>`;
   });
@@ -1978,17 +2004,33 @@ function renderJardList() {
   updateJardTotals();
 }
 
-function updateJardRow(i) {
+// When user enters كرتونة → auto-fill باكو = cart * pakPerCart (extra pak stays)
+function onCartChange(i) {
   const meta = PROD_META[i];
   const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
+  // Fill باكو with equivalent packs only if the pak field is 0 or empty
+  const pakEl = document.getElementById('jpak_'+i);
+  const curPak = parseInt(pakEl?.value) || 0;
+  // Only auto-fill if pak field not manually set (simple heuristic: divisible by pakPerCart)
+  const autoPak = cart * meta.pakPerCart;
+  if (pakEl) pakEl.value = autoPak;
+  const totalCart = cart; // cart already represents full cartons
+  const resEl = document.getElementById('jresult_'+i);
+  if (resEl) resEl.textContent = cart;
+  updateJardTotals();
+}
+
+// When user enters باكو → convert to كرتونة automatically
+function onPakChange(i) {
+  const meta = PROD_META[i];
   const pak  = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
-  // total in كرتونة = كرتونة + (باكو / باكو per cart), keep as decimal for display
-  const totalCart = cart + pak / meta.pakPerCart;
-  const totalPak  = cart * meta.pakPerCart + pak;
-  document.getElementById('jresult_'+i).textContent =
-    pak % meta.pakPerCart === 0
-      ? totalCart.toFixed(0)
-      : totalCart.toFixed(2);
+  const autoCart = Math.floor(pak / meta.pakPerCart);
+  const remPak   = pak % meta.pakPerCart;
+  const cartEl = document.getElementById('jcart_'+i);
+  if (cartEl) cartEl.value = autoCart;
+  const totalCart = autoCart + remPak / meta.pakPerCart;
+  const resEl = document.getElementById('jresult_'+i);
+  if (resEl) resEl.textContent = remPak === 0 ? autoCart : totalCart.toFixed(2);
   updateJardTotals();
 }
 
@@ -2002,9 +2044,12 @@ function updateJardTotals() {
     totPak   += pak;
     totFinal += cart + pak / meta.pakPerCart;
   });
-  document.getElementById('jTotCart').textContent  = totCart;
-  document.getElementById('jTotPak').textContent   = totPak;
-  document.getElementById('jTotFinal').textContent = totFinal % 1 === 0 ? totFinal : totFinal.toFixed(1);
+  const elCart  = document.getElementById('jTotCart');
+  const elPak   = document.getElementById('jTotPak');
+  const elFinal = document.getElementById('jTotFinal');
+  if (elCart)  elCart.textContent  = totCart;
+  if (elPak)   elPak.textContent   = totPak;
+  if (elFinal) elFinal.textContent = totFinal % 1 === 0 ? totFinal : totFinal.toFixed(1);
 }
 
 function resetJardInputs() {
@@ -2154,6 +2199,16 @@ let customProducts = loadData('wardaProducts', null);
 
 function applyProductSettings() {
   if (!customProducts) return;
+  // If saved products differ in count, rebuild arrays
+  if (customProducts.length !== PRODUCTS.length) {
+    // Remove extra or keep existing
+    while (PRODUCTS.length > customProducts.length) { PRODUCTS.pop(); PROD_META.pop(); stock.pop(); }
+    while (PRODUCTS.length < customProducts.length) {
+      PRODUCTS.push({ name: 'منتج', price: 0 });
+      PROD_META.push({ pakPerCart: 1, weight: '—' });
+      stock.push(0);
+    }
+  }
   customProducts.forEach((cp, i) => {
     if (!PRODUCTS[i]) return;
     if (cp.name)       PRODUCTS[i].name       = cp.name;
@@ -2168,14 +2223,41 @@ function renderProductSettingsList() {
   PRODUCTS.forEach((p, i) => {
     const meta = PROD_META[i];
     html += `
-      <div style="display:grid;grid-template-columns:1.6fr 1fr 0.7fr 0.7fr;gap:4px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);${i%2===0?'background:var(--green-pale)':''}">
+      <div style="display:grid;grid-template-columns:1.6fr 1fr 0.7fr 0.7fr 32px;gap:4px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);${i%2===0?'background:var(--green-pale)':''}">
         <input class="jard-input" style="font-size:12px;text-align:right;padding:6px 8px" id="ps_name_${i}" value="${p.name}">
         <input class="jard-input" type="number" id="ps_price_${i}" value="${p.price}" min="0" inputmode="decimal">
         <input class="jard-input" type="number" id="ps_pak_${i}" value="${meta.pakPerCart}" min="1" inputmode="numeric">
         <input class="jard-input" style="font-size:11px" id="ps_weight_${i}" value="${meta.weight}">
+        <button onclick="deleteProduct(${i})" style="background:var(--red-light);color:var(--red);border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0" title="مسح المنتج">🗑</button>
       </div>`;
   });
   document.getElementById('productSettingsList').innerHTML = html;
+}
+
+function addNewProduct() {
+  PRODUCTS.push({ name: 'منتج جديد', price: 0 });
+  PROD_META.push({ pakPerCart: 1, weight: '—' });
+  stock.push(0);
+  renderProductSettingsList();
+  renderPricesList();
+  // scroll to bottom of list
+  const list = document.getElementById('productSettingsList');
+  list.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  showToast('✅ تم إضافة منتج جديد — عدّل بياناته واضغط حفظ');
+}
+
+function deleteProduct(i) {
+  if (PRODUCTS.length <= 1) { showToast('لا يمكن مسح كل المنتجات', 'error'); return; }
+  confirm2('مسح المنتج', `هل تريد مسح منتج "${PRODUCTS[i].name}"؟ سيتم حذفه نهائياً من كل الشاشات.`, () => {
+    PRODUCTS.splice(i, 1);
+    PROD_META.splice(i, 1);
+    stock.splice(i, 1);
+    saveData('wardaStock', stock);
+    saveProductSettings();
+    renderProductSettingsList();
+    renderPricesList();
+    showToast('✅ تم مسح المنتج');
+  });
 }
 
 function saveProductSettings() {
@@ -2194,8 +2276,11 @@ function saveProductSettings() {
   });
 
   saveData('wardaProducts', saved);
+  saveData('wardaStock', stock);
   // also sync prices
   saveData('wardaPrices', PRODUCTS.map(p => p.price));
+  renderProductSettingsList();
+  renderPricesList();
   showToast('✅ تم حفظ المنتجات بالكامل');
 }
 
@@ -2214,18 +2299,40 @@ function setAnalyticsPeriod(period, btn) {
 
 function getFilteredInvoices() {
   const now = new Date();
+  // Normalize today to midnight for comparison
+  const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   return invoices.filter(inv => {
     if (analyticsPeriod === 'all') return true;
-    // parse date DD/MM/YYYY
-    const parts = inv.date.split('/');
-    if (parts.length < 3) return true;
-    const d = new Date(parts[2], parts[1]-1, parts[0]);
+    if (!inv.date) return false;
+
+    // Handle Arabic-locale dates like "١٥/٠٥/٢٠٢٦" or Western "15/05/2026"
+    const normalized = inv.date
+      .replace(/[٠-٩]/g, d => d.charCodeAt(0) - 1632)
+      .replace(/[۰-۹]/g, d => d.charCodeAt(0) - 1776);
+
+    const parts = normalized.split('/');
+    if (parts.length < 3) return false;
+
+    let day, month, year;
+    // Detect DD/MM/YYYY vs MM/DD/YYYY: if first part > 12 it's day
+    if (parseInt(parts[0]) > 12) {
+      [day, month, year] = parts;
+    } else {
+      // Could be either, assume DD/MM/YYYY (Arabic standard)
+      [day, month, year] = parts;
+    }
+    const d = new Date(parseInt(year), parseInt(month)-1, parseInt(day));
+    if (isNaN(d.getTime())) return false;
+
     if (analyticsPeriod === 'today') {
-      return d.toDateString() === now.toDateString();
+      return d.getFullYear() === now.getFullYear() &&
+             d.getMonth()    === now.getMonth()    &&
+             d.getDate()     === now.getDate();
     }
     if (analyticsPeriod === 'week') {
-      const weekAgo = new Date(now); weekAgo.setDate(now.getDate()-7);
-      return d >= weekAgo;
+      const weekAgo = new Date(todayMid); weekAgo.setDate(todayMid.getDate() - 7);
+      return d >= weekAgo && d <= now;
     }
     if (analyticsPeriod === 'month') {
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
