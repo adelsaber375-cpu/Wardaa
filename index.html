@@ -1277,23 +1277,29 @@
 // DATA LAYER
 // ==========================================
 const PRODUCTS = [
-  { name: "قص 20",           price: 460   },
-  { name: "قص 30",           price: 690   },
-  { name: "قص 40",           price: 736   },
-  { name: "قص 50",           price: 920   },
-  { name: "قص 100",          price: 1104  },
-  { name: "قص 140",          price: 1076  },
-  { name: "قص 180",          price: 1376  },
-  { name: "قص بلاستيك 190",  price: 1456  },
-  { name: "أزاد 100",        price: 792   },
+  { name: "قص 20",           price: 450   },
+  { name: "قص 30",           price: 675   },
+  { name: "قص 40",           price: 720   },
+  { name: "قص 50",           price: 900   },
+  { name: "قص 100",          price: 1080  },
+  { name: "قص 140",          price: 1064  },
+  { name: "قص 180",          price: 1360  },
+  { name: "قص بلاستيك 190",  price: 1440  },
+  { name: "أزاد 100",        price: 768   },
   { name: "أزاد 1ك جالون",   price: 300   },
-  { name: "جمل 100",         price: 736   },
-  { name: "تاج 50",          price: 552   },
-  { name: "تاج 80",          price: 588.8 },
+  { name: "جمل 100",         price: 720   },
+  { name: "تاج 50",          price: 540   },
+  { name: "تاج 80",          price: 576   },
   { name: "مدغة الوردة",     price: 4800  },
+  { name: "ليالي 20",        price: 450   },
+  { name: "ليالي 50",        price: 900   },
+  { name: "ليالي 80",        price: 864   },
+  { name: "ليالي 150",       price: 1080  },
+  { name: "معالي 25",        price: 562.5 },
+  { name: "معالي 90",        price: 972   },
 ];
 
-const DEFAULT_STOCK = [5,10,10,8,20,5,30,5,5,6,5,5,5,0];
+const DEFAULT_STOCK = [5,10,10,8,20,5,30,5,5,6,5,5,5,0,5,5,5,5,5,5];
 
 function loadData(key, def) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
@@ -1372,7 +1378,7 @@ function getSold() {
 
 function getCurrentStock() {
   const sold = getSold();
-  return stock.map((s,i) => Math.max(0, s - sold[i]));
+  return PRODUCTS.map((_, i) => Math.max(0, (stock[i] || 0) - (sold[i] || 0)));
 }
 
 function renderStock() {
@@ -1889,20 +1895,26 @@ function resetAll() {
       jardHistory = [];
       generalSettings = { company:'الوردة للدخان', agent:'عادل صابر', region:'كوم أمبو - أدفو' };
       const resetDefaults = [
-        {name:'قص 20',price:460,pakPerCart:25,weight:'90gm'},
-        {name:'قص 30',price:690,pakPerCart:25,weight:'140gm'},
-        {name:'قص 40',price:736,pakPerCart:20,weight:'190gm'},
-        {name:'قص 50',price:920,pakPerCart:20,weight:'240gm'},
-        {name:'قص 100',price:1104,pakPerCart:12,weight:'500gm'},
-        {name:'قص 140',price:1076,pakPerCart:8,weight:'750gm'},
-        {name:'قص 180',price:1376,pakPerCart:8,weight:'1kg'},
-        {name:'قص بلاستيك 190',price:1456,pakPerCart:8,weight:'1kg'},
-        {name:'أزاد 100',price:792,pakPerCart:24,weight:'100gm'},
+        {name:'قص 20',price:450,pakPerCart:25,weight:'90gm'},
+        {name:'قص 30',price:675,pakPerCart:25,weight:'140gm'},
+        {name:'قص 40',price:720,pakPerCart:20,weight:'190gm'},
+        {name:'قص 50',price:900,pakPerCart:20,weight:'240gm'},
+        {name:'قص 100',price:1080,pakPerCart:12,weight:'500gm'},
+        {name:'قص 140',price:1064,pakPerCart:8,weight:'750gm'},
+        {name:'قص 180',price:1360,pakPerCart:8,weight:'1kg'},
+        {name:'قص بلاستيك 190',price:1440,pakPerCart:8,weight:'1kg'},
+        {name:'أزاد 100',price:768,pakPerCart:24,weight:'100gm'},
         {name:'أزاد 1ك جالون',price:300,pakPerCart:1,weight:'1kg'},
-        {name:'جمل 100',price:736,pakPerCart:8,weight:'700gm'},
-        {name:'تاج 50',price:552,pakPerCart:12,weight:'380gm'},
-        {name:'تاج 80',price:588.8,pakPerCart:8,weight:'600gm'},
-        {name:'مدغة الوردة',price:4800,pakPerCart:1,weight:'—'}
+        {name:'جمل 100',price:720,pakPerCart:8,weight:'700gm'},
+        {name:'تاج 50',price:540,pakPerCart:12,weight:'380gm'},
+        {name:'تاج 80',price:576,pakPerCart:8,weight:'600gm'},
+        {name:'مدغة الوردة',price:4800,pakPerCart:1,weight:'—'},
+        {name:'ليالي 20',price:450,pakPerCart:1,weight:'100gm'},
+        {name:'ليالي 50',price:900,pakPerCart:1,weight:'280gm'},
+        {name:'ليالي 80',price:864,pakPerCart:1,weight:'500gm'},
+        {name:'ليالي 150',price:1080,pakPerCart:1,weight:'1kg'},
+        {name:'معالي 25',price:562.5,pakPerCart:1,weight:'110gm'},
+        {name:'معالي 90',price:972,pakPerCart:1,weight:'500gm'},
       ];
       while (PRODUCTS.length > 0) PRODUCTS.pop();
       while (PROD_META.length > 0) PROD_META.pop();
@@ -1937,6 +1949,12 @@ const PROD_META = [
   { pakPerCart: 12, weight: '380gm' },
   { pakPerCart:  8, weight: '600gm' },
   { pakPerCart:  1, weight: '—'     },
+  { pakPerCart:  1, weight: '100gm' },
+  { pakPerCart:  1, weight: '280gm' },
+  { pakPerCart:  1, weight: '500gm' },
+  { pakPerCart:  1, weight: '1kg'   },
+  { pakPerCart:  1, weight: '110gm' },
+  { pakPerCart:  1, weight: '500gm' },
 ];
 
 let jardMode = 'load'; // 'load' or 'jard'
@@ -2199,16 +2217,15 @@ let customProducts = loadData('wardaProducts', null);
 
 function applyProductSettings() {
   if (!customProducts) return;
-  // If saved products differ in count, rebuild arrays
   if (customProducts.length !== PRODUCTS.length) {
-    // Remove extra or keep existing
-    while (PRODUCTS.length > customProducts.length) { PRODUCTS.pop(); PROD_META.pop(); stock.pop(); }
+    while (PRODUCTS.length > customProducts.length) { PRODUCTS.pop(); PROD_META.pop(); }
     while (PRODUCTS.length < customProducts.length) {
       PRODUCTS.push({ name: 'منتج', price: 0 });
       PROD_META.push({ pakPerCart: 1, weight: '—' });
-      stock.push(0);
     }
   }
+  // Ensure stock array has enough elements for all products
+  while (stock.length < PRODUCTS.length) stock.push(0);
   customProducts.forEach((cp, i) => {
     if (!PRODUCTS[i]) return;
     if (cp.name)       PRODUCTS[i].name       = cp.name;
@@ -2276,6 +2293,9 @@ function saveProductSettings() {
   });
 
   saveData('wardaProducts', saved);
+  // trim stock to match current products count before saving
+  const trimmedStock = stock.slice(0, PRODUCTS.length);
+  stock = trimmedStock;
   saveData('wardaStock', stock);
   // also sync prices
   saveData('wardaPrices', PRODUCTS.map(p => p.price));
