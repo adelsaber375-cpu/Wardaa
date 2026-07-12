@@ -924,8 +924,25 @@
     <div class="card-body">
       <div class="form-group">
         <label class="form-label">اسم العميل *</label>
-        <input class="form-input gold-bg" id="clientName" placeholder="اكتب اسم العميل..." list="clientsList">
+        <input class="form-input gold-bg" id="clientName" placeholder="اكتب اسم العميل..." list="clientsList" oninput="updateClientTarget()">
         <datalist id="clientsList"></datalist>
+      </div>
+      <div id="clientTargetBox" style="display:none;margin-top:8px;padding:10px 14px;background:var(--green-light);border-radius:10px;border:1px solid var(--green)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text-mid)">🎯 الهدف الشهري</span>
+          <span style="font-size:13px;font-weight:700;color:var(--green)" id="clientTargetAmt"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:13px;color:var(--text-mid)">📊 المبيعات هذا الشهر</span>
+          <span style="font-size:13px;font-weight:700;color:var(--blue)" id="clientTargetSold"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+          <span style="font-size:13px;color:var(--text-mid)">💰 المتبقي للهدف</span>
+          <span style="font-size:15px;font-weight:900" id="clientTargetRem"></span>
+        </div>
+        <div style="margin-top:8px;background:#ddd;border-radius:10px;height:8px;overflow:hidden">
+          <div id="clientTargetBar" style="height:100%;background:var(--green);border-radius:10px;transition:width 0.3s"></div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-group">
@@ -1208,6 +1225,27 @@
     </div>
   </div>
 
+  <!-- Client Monthly Targets -->
+  <div class="card">
+    <div class="card-header" style="background:linear-gradient(135deg,#1a4fa0,#2e6fd4)">
+      <h2>🎯 الهدف الشهري للعملاء</h2>
+    </div>
+    <div style="padding:12px 14px;background:var(--blue-light);border-bottom:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--text-mid);margin-bottom:10px">➕ إضافة عميل جديد وتحديد هدفه الشهري</div>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="newTargetClient" placeholder="اسم العميل..." style="flex:1;margin:0">
+        <input type="number" class="form-input" id="newTargetAmt" placeholder="الهدف ج" style="width:110px;margin:0" value="400000">
+        <button class="btn btn-primary" style="width:auto;padding:0 14px;white-space:nowrap" onclick="addClientTarget()">✅ إضافة</button>
+      </div>
+    </div>
+    <div style="padding:8px 14px;font-size:12px;color:var(--text-mid);background:var(--gray)">
+      💡 المتبقي = الهدف - مبيعات هذا الشهر
+    </div>
+    <div id="clientTargetsList">
+      <div style="padding:20px;text-align:center;color:var(--text-light)">لا يوجد عملاء بعد — أضف عميلاً من فوق</div>
+    </div>
+  </div>
+
   <!-- PWA Install -->
   <div class="card">
     <div class="card-header" style="background:linear-gradient(135deg,#5b21b6,#7c3aed)">
@@ -1353,7 +1391,7 @@ function showScreen(name) {
   if (name === 'stock')    renderStock();
   if (name === 'invoice')  renderInvoiceItems();
   if (name === 'log')      renderLog();
-  if (name === 'settings') { renderPricesList(); renderProductSettingsList(); loadGeneralSettingsUI(); }
+  if (name === 'settings') { renderPricesList(); renderProductSettingsList(); loadGeneralSettingsUI(); renderClientTargets(); }
   if (name === 'analytics') { renderAnalytics(); }
   if (name === 'jard') { renderJardStats(); setJardMode(jardMode); renderJardHistoryList(); }
   if (name === 'edit') {
@@ -1561,6 +1599,11 @@ function saveInvoice() {
     });
     calcInvSummary();
     showToast(`✅ فاتورة #${inv.id} محفوظة — ${fmt(total)} ج`);
+    updateClientTarget();
+    // عرض popup مشاركة واتساب
+    setTimeout(() => {
+      confirm2('📲 مشاركة على واتساب', `هل تريد إرسال فاتورة ${client} على واتساب؟`, () => shareWhatsApp(inv.id));
+    }, 500);
   };
 
   if (overStock) {
@@ -1624,6 +1667,7 @@ function renderLog() {
         <div class="log-actions">
           <button class="btn btn-secondary btn-sm" style="flex:1" onclick="editFromLog(${inv.id})">✏️ تعديل</button>
           <button class="btn btn-danger btn-sm" style="flex:1" onclick="deleteInvoice(${inv.id})">🗑️ حذف</button>
+          <button class="btn btn-sm" style="flex:1;background:#25D366;color:#fff" onclick="shareWhatsApp(${inv.id})">📲 واتساب</button>
         </div>
       </div>`;
   });
@@ -1831,6 +1875,7 @@ function exportBackup() {
     jardHistory:  loadData('wardaJardHistory', []),
     general:      loadData('wardaGeneral', {}),
     products:     loadData('wardaProducts', null),
+    clientTargets: loadData('wardaClientTargets', {}),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1865,6 +1910,7 @@ function importBackup(event) {
         if (data.jardHistory) { saveData('wardaJardHistory', data.jardHistory); jardHistory = data.jardHistory; }
         if (data.general)     { saveData('wardaGeneral', data.general); generalSettings = data.general; applyGeneralSettings(); }
         if (data.products)    { saveData('wardaProducts', data.products); customProducts = data.products; applyProductSettings(); }
+        if (data.clientTargets) { saveData('wardaClientTargets', data.clientTargets); clientTargets = data.clientTargets; }
         const info = document.getElementById('backupInfo');
         info.style.display = 'block';
         info.innerHTML = `✅ تم الاستيراد بنجاح | ${data.invoices?.length || 0} فاتورة | تاريخ النسخة: ${data.exportDate?.slice(0,10) || 'غير معروف'}`;
@@ -2578,10 +2624,133 @@ function toggleAnClient(id) {
 }
 
 // ==========================================
-// SCREEN 7: SETTINGS
+// WHATSAPP SHARE
 // ==========================================
+function shareWhatsApp(id) {
+  const inv = invoices.find(i => i.id === id);
+  if (!inv) return;
+  const company = generalSettings?.company || 'الوردة للدخان';
+  const agent   = generalSettings?.agent   || 'عادل صابر';
+  let msg = `🌹 *${company}*\n`;
+  msg += `👤 العميل: *${inv.client}*\n`;
+  if (inv.location) msg += `📍 الموقع: ${inv.location}\n`;
+  msg += `📅 التاريخ: ${inv.date}\n`;
+  msg += `🧾 فاتورة رقم: #${inv.id}\n`;
+  msg += `─────────────────\n`;
+  inv.items.forEach(it => {
+    msg += `• ${it.name}: ${it.qty} × ${fmt(it.price)} = *${fmt(it.qty * it.price)} ج*\n`;
+  });
+  msg += `─────────────────\n`;
+  if (inv.discountPct > 0 || inv.discountFixed > 0) {
+    msg += `💸 الخصم: ${fmt(inv.subtotal - inv.total)} ج\n`;
+  }
+  msg += `✅ *الإجمالي: ${fmt(inv.total)} جنيه*\n`;
+  msg += `─────────────────\n`;
+  msg += `🏪 المندوب: ${agent}`;
+  const phone = inv.phone ? inv.phone.replace(/^0/, '20') : '';
+  const url = phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
 
-document.getElementById('headerDate').textContent = todayStr();
+// ==========================================
+// MONTHLY TARGET PER CLIENT
+// ==========================================
+let clientTargets = loadData('wardaClientTargets', {});
+
+function getClientMonthTotal(clientName) {
+  const now = new Date();
+  const month = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}`;
+  return invoices
+    .filter(inv => inv.client === clientName && inv.date && inv.date.startsWith(month))
+    .reduce((s, inv) => s + inv.total, 0);
+}
+
+function updateClientTarget() {
+  const name = document.getElementById('clientName')?.value.trim();
+  const box  = document.getElementById('clientTargetBox');
+  if (!name || !clientTargets[name]) { box.style.display = 'none'; return; }
+  const target = clientTargets[name];
+  const sold   = getClientMonthTotal(name);
+  const rem    = Math.max(0, target - sold);
+  const pct    = Math.min(100, Math.round((sold / target) * 100));
+  box.style.display = 'block';
+  document.getElementById('clientTargetAmt').textContent  = fmt(target) + ' ج';
+  document.getElementById('clientTargetSold').textContent = fmt(sold)   + ' ج';
+  const remEl = document.getElementById('clientTargetRem');
+  remEl.textContent  = fmt(rem) + ' ج';
+  remEl.style.color  = rem === 0 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('clientTargetBar').style.width = pct + '%';
+}
+
+function setClientTarget(name, target) {
+  if (!name) return;
+  clientTargets[name] = target;
+  saveData('wardaClientTargets', clientTargets);
+}
+
+function addClientTarget() {
+  const name   = document.getElementById('newTargetClient')?.value.trim();
+  const target = parseFloat(document.getElementById('newTargetAmt')?.value) || 0;
+  if (!name)   { showToast('اكتب اسم العميل أولاً', 'error'); return; }
+  if (!target) { showToast('اكتب الهدف الشهري أولاً', 'error'); return; }
+  clientTargets[name] = target;
+  saveData('wardaClientTargets', clientTargets);
+  document.getElementById('newTargetClient').value = '';
+  document.getElementById('newTargetAmt').value = '400000';
+  renderClientTargets();
+  showToast(`✅ تم إضافة ${name} بهدف ${fmt(target)} ج`);
+}
+
+function deleteClientTarget(name) {
+  confirm2('حذف الهدف', `هل تريد حذف هدف "${name}"؟`, () => {
+    delete clientTargets[name];
+    saveData('wardaClientTargets', clientTargets);
+    renderClientTargets();
+    showToast('✅ تم الحذف');
+  });
+}
+
+function renderClientTargets() {
+  const fromInvoices = [...new Set(invoices.map(i => i.client))];
+  const allClients   = [...new Set([...Object.keys(clientTargets), ...fromInvoices])];
+  let html = '';
+  allClients.forEach(name => {
+    const target = clientTargets[name] || 0;
+    const sold   = getClientMonthTotal(name);
+    const rem    = target ? Math.max(0, target - sold) : null;
+    const pct    = target ? Math.min(100, Math.round((sold/target)*100)) : 0;
+    html += `
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="flex:1;font-size:14px;font-weight:700">👤 ${name}</span>
+          <button onclick="deleteClientTarget('${name}')" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer">🗑️</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-mid);min-width:55px">الهدف:</span>
+          <input type="number" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-family:Cairo;font-size:13px;text-align:center"
+                 value="${target}" placeholder="الهدف ج"
+                 onchange="setClientTarget('${name}', parseFloat(this.value)||0); renderClientTargets()">
+          <span style="font-size:12px;color:var(--text-mid)">ج</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+          <span style="color:var(--text-mid)">المبيعات: <b style="color:var(--blue)">${fmt(sold)} ج</b></span>
+          ${rem !== null ? `<span>المتبقي: <b style="color:${rem===0?'var(--red)':'var(--green)'}">${fmt(rem)} ج</b></span>` : '<span style="color:var(--text-light)">حدد هدفاً</span>'}
+        </div>
+        ${target ? `
+          <div style="background:#ddd;border-radius:10px;height:8px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${pct>=100?'var(--red)':'var(--green)'};border-radius:10px"></div>
+          </div>
+          <div style="text-align:left;font-size:11px;color:var(--text-light);margin-top:3px">${pct}%</div>
+        ` : ''}
+      </div>`;
+  });
+  if (!html) html = '<div style="padding:20px;text-align:center;color:var(--text-light)">لا يوجد عملاء — أضف من فوق</div>';
+  const el = document.getElementById('clientTargetsList');
+  if (el) el.innerHTML = html;
+}
+
 
 // Apply all saved settings on startup
 applyGeneralSettings();
