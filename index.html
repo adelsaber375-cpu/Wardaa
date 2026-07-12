@@ -2767,7 +2767,7 @@ renderStock();
 // ==========================================
 if ('serviceWorker' in navigator) {
   const swCode = `
-    const CACHE = 'warda-v1';
+    const CACHE = 'warda-v2';
     self.addEventListener('install', e => {
       e.waitUntil(caches.open(CACHE).then(c => c.addAll([self.location.pathname])));
       self.skipWaiting();
