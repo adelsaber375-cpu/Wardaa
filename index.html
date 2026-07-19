@@ -862,6 +862,7 @@
 </style>
 <body>
 <div id="jsErrorBox"></div>
+<div id="toast" class="toast"></div>
 
 <header class="app-header">
   <div class="header-inner">
@@ -2796,5 +2797,4 @@ function renderAnalytics() {
   const topProds = Object.entries(prodMap).sort((a,b) => b[1].val - a[1].val).slice(0,8);
   const maxProdVal = topProds[0]?.[1].val || 1;
 
-  let prodHtml = topProds.length === 0
-    ? `<div 
+  let prodHtml
