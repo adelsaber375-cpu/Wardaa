@@ -1370,6 +1370,14 @@ function saveData(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}/${m}/${day}`;
+}
+
 let stock   = loadData('wardaStock',   DEFAULT_STOCK.slice());
 let invoices = loadData('wardaInvoices', []);
 let invCounter = loadData('wardaCounter', 1);
@@ -1566,14 +1574,6 @@ function deleteSession(sessionId) {
 // HELPERS
 // ==========================================
 function fmt(n) { return Number(n).toLocaleString('ar-EG'); }
-
-function todayStr() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}/${m}/${day}`;
-}
 
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
@@ -2561,8 +2561,10 @@ let generalSettings = loadData('wardaGeneral', {
 });
 
 function applyGeneralSettings() {
-  document.querySelector('.logo-text h1').textContent = generalSettings.company || 'الوردة للدخان';
-  document.querySelector('.logo-text p').textContent  = 'سيستم المندوب — ' + (generalSettings.agent || 'المندوب');
+  const h1 = document.querySelector('.logo-text h1');
+  const p  = document.querySelector('.logo-text p');
+  if (h1) h1.textContent = generalSettings.company || 'الوردة للدخان';
+  if (p)  p.textContent  = 'سيستم المندوب — ' + (generalSettings.agent || 'المندوب');
 }
 
 function loadGeneralSettingsUI() {
@@ -2797,5 +2799,3 @@ function renderAnalytics() {
     const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const pct = Math.round((data.val / maxProdVal)*100);
     prodHtml += `
-      <div class="an-prod-row">
-        <div cla
