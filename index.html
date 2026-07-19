@@ -861,6 +861,7 @@
   .jard-hist-detail-row span:last-child { font-weight: 700; color: var(--text); }
 </style>
 <body>
+<div id="jsErrorBox"></div>
 
 <header class="app-header">
   <div class="header-inner">
@@ -1333,6 +1334,10 @@
 
 
 <script>
+window.onerror = function(msg, src, line, col, err) {
+  const div = document.getElementById('jsErrorBox');
+  if (div) div.innerHTML = `<div style="background:red;color:#fff;padding:10px;font-size:12px;direction:ltr">JS Error: ${msg} (line ${line})</div>`;
+};
 // ==========================================
 // DATA LAYER
 // ==========================================
@@ -2792,11 +2797,4 @@ function renderAnalytics() {
   const maxProdVal = topProds[0]?.[1].val || 1;
 
   let prodHtml = topProds.length === 0
-    ? `<div class="empty-state"><div class="empty-icon">📦</div><p>لا توجد بيانات</p></div>`
-    : '';
-
-  topProds.forEach(([name, data], i) => {
-    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const pct = Math.round((data.val / maxProdVal)*100);
-    prodHtml += `
-      <di
+    ? `<div 
