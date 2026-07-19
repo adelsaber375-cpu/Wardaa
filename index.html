@@ -905,6 +905,8 @@
 <!-- ===== SCREEN 1: STOCK ===== -->
 <div class="screen active" id="screen-stock">
 
+  <div id="sessionBar"></div>
+
   <div class="stats-grid" id="stockStats"></div>
 
   <div class="card">
@@ -1027,6 +1029,35 @@
 </div>
 
 <!-- ===== MODAL: LOADING ===== -->
+<!-- ===== NEW SESSION MODAL ===== -->
+<div class="modal-overlay" id="newSessionModal">
+  <div class="modal-content">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <h3 style="margin:0;font-size:16px">🟢 فتح جلسة جديدة</h3>
+      <button onclick="closeModal('newSessionModal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)">✕</button>
+    </div>
+    <div style="padding:16px">
+      <label style="font-size:13px;color:var(--text-mid);display:block;margin-bottom:8px">اسم الجلسة</label>
+      <input id="newSessionInput" class="form-input" placeholder="مثال: جولة صباح ١٦ يوليو" style="margin-bottom:16px">
+      <button onclick="confirmNewSession()" style="width:100%;background:var(--green);color:#fff;border:none;padding:12px;border-radius:10px;font-family:Cairo;font-size:15px;font-weight:700;cursor:pointer">✅ فتح الجلسة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SESSIONS MODAL ===== -->
+<div class="modal-overlay" id="sessionsModal">
+  <div class="modal-content" style="max-height:85vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)">
+      <h3 style="margin:0;font-size:16px">📋 الجلسات</h3>
+      <button onclick="closeModal('sessionsModal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-mid)">✕</button>
+    </div>
+    <div style="padding:12px 14px;background:var(--green-light);border-bottom:1px solid var(--border)">
+      <button onclick="closeModal('sessionsModal');openNewSessionPrompt()" style="width:100%;background:var(--green);color:#fff;border:none;padding:10px;border-radius:10px;font-family:Cairo;font-size:14px;font-weight:700;cursor:pointer">🟢 فتح جلسة جديدة</button>
+    </div>
+    <div id="sessionsList" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="loadingModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1054,60 +1085,50 @@
 <!-- ===== SCREEN 5: الجرد ===== -->
 <div class="screen" id="screen-jard">
 
-  <!-- Summary totals -->
-  <div class="stats-grid" id="jardStats"></div>
-
-  <!-- Mode toggle -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-body" style="padding:10px 14px">
-      <div style="display:flex;gap:8px">
-        <button id="jardModeLoad" class="btn btn-primary btn-sm" style="flex:1" onclick="setJardMode('load')">🚛 تحميل السيارة</button>
-        <button id="jardModeJard" class="btn btn-secondary btn-sm" style="flex:1" onclick="setJardMode('jard')">📦 جرد نهاية اليوم</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Table card -->
+  <!-- Current Day Status -->
   <div class="card">
     <div class="card-header">
-      <h2 id="jardCardTitle">🚛 تحميل السيارة</h2>
-      <button class="btn btn-secondary btn-sm" onclick="resetJardInputs()" style="width:auto;color:var(--red);font-size:12px">تصفير</button>
+      <h2>📊 وضع اليوم الحالي</h2>
+      <button class="btn btn-secondary btn-sm" onclick="openLoadingModal()" style="width:auto;color:var(--green);font-weight:700">✏️ تعديل التحميل</button>
     </div>
+    <div id="jardDayStatus"></div>
+  </div>
 
-    <!-- info note -->
-    <div id="jardReviewNote" style="display:none;padding:8px 14px;background:#fff3e0;border-bottom:1px solid #ffe0b2;font-size:12px;color:#e65100;font-weight:600">
-      👁️ وضع المراجعة فقط — لن يُحدَّث المخزن
+  <!-- New Jard Entry -->
+  <div class="card">
+    <div class="card-header" style="background:linear-gradient(135deg,#1a4fa0,#2e6fd4)">
+      <h2>📦 تسجيل جرد نهاية اليوم</h2>
+      <button class="btn btn-secondary btn-sm" onclick="resetJardInputs()" style="width:auto;color:var(--red);font-size:12px;background:rgba(255,255,255,0.9)">تصفير</button>
     </div>
-
-    <!-- Table header -->
-    <div id="jardTableHeader" class="jard-header-row">
+    <div style="padding:8px 14px;font-size:12px;color:var(--text-mid);background:var(--blue-light);border-bottom:1px solid var(--border)">
+      💡 أدخل الكميات المتبقية الفعلية في السيارة نهاية اليوم
+    </div>
+    <div class="jard-header-row">
       <span>المنتج</span>
       <span>الباكو/كرتونة</span>
       <span>كرتونة</span>
       <span>باكو</span>
-      <span>إجمالي كرتونة</span>
+      <span>إجمالي</span>
     </div>
-
     <div id="jardList"></div>
-
-    <!-- Totals row -->
-    <div id="jardTotalsRow" class="jard-total-row">
+    <div class="jard-total-row">
       <span>الإجمالي</span>
       <span>—</span>
       <span id="jTotCart">0</span>
       <span id="jTotPak">0</span>
       <span id="jTotFinal">0</span>
     </div>
-
-    <div id="jardActions" style="padding:14px;display:flex;gap:10px">
-      <button class="btn btn-primary" style="flex:2" onclick="saveJard()">💾 حفظ وتحديث المخزن</button>
-      <button class="btn btn-secondary" style="flex:1" onclick="resetJardInputs()">مسح</button>
+    <div style="padding:14px">
+      <button class="btn btn-primary" onclick="saveJardEntry()">💾 حفظ الجرد</button>
     </div>
   </div>
 
   <!-- History -->
   <div class="card">
-    <div class="card-header"><h2>📜 سجل التحميل والجرد</h2></div>
+    <div class="card-header"><h2>📜 سجل الأيام</h2></div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <input class="form-input" id="jardSearchInput" placeholder="ابحث بتاريخ أو اسم جلسة..." oninput="renderJardHistory()" style="margin:0">
+    </div>
     <div id="jardHistory"></div>
   </div>
 
@@ -1354,6 +1375,194 @@ let invoices = loadData('wardaInvoices', []);
 let invCounter = loadData('wardaCounter', 1);
 
 // ==========================================
+// SESSIONS
+// ==========================================
+let sessions = loadData('wardaSessions', []);
+let currentSessionId = loadData('wardaCurrentSession', null);
+
+// ترحيل: لو في فواتير قديمة بدون session، حطهم في جلسة مؤرشفة
+(function migrateOldInvoices() {
+  const untagged = invoices.filter(inv => !inv.sessionId);
+  if (untagged.length > 0 && sessions.length === 0) {
+    const oldSession = {
+      id: 1,
+      label: 'الجلسة الأولى (مؤرشفة)',
+      date: untagged[0]?.date || todayStr(),
+      createdAt: new Date().toISOString(),
+      status: 'closed',
+      closedAt: new Date().toISOString()
+    };
+    sessions.push(oldSession);
+    invoices.forEach(inv => { if (!inv.sessionId) inv.sessionId = 1; });
+    saveData('wardaSessions', sessions);
+    saveData('wardaInvoices', invoices);
+    currentSessionId = null;
+    saveData('wardaCurrentSession', null);
+  }
+})();
+
+function getCurrentSession() {
+  return sessions.find(s => s.id === currentSessionId) || null;
+}
+
+function openNewSessionPrompt() {
+  document.getElementById('newSessionInput').value = `جلسة ${todayStr()}`;
+  openModal('newSessionModal');
+}
+
+function confirmNewSession() {
+  const label = document.getElementById('newSessionInput').value.trim();
+  closeModal('newSessionModal');
+  openNewSession(label || `جلسة ${todayStr()}`);
+}
+
+function openNewSession(label) {
+  if (currentSessionId) {
+    showToast('أغلق الجلسة الحالية أولاً', 'error');
+    return;
+  }
+  const id = Date.now();
+  const session = {
+    id,
+    label: label || `جلسة ${todayStr()}`,
+    date: todayStr(),
+    createdAt: new Date().toISOString(),
+    status: 'active'
+  };
+  sessions.push(session);
+  currentSessionId = id;
+  saveData('wardaSessions', sessions);
+  saveData('wardaCurrentSession', currentSessionId);
+  renderStock();
+  renderSessionBar();
+  showToast(`✅ تم فتح: ${session.label}`);
+}
+
+function closeCurrentSession() {
+  const session = getCurrentSession();
+  if (!session) { showToast('لا توجد جلسة نشطة', 'error'); return; }
+  confirm2('🔴 قفل الجلسة', `هل تريد قفل "${session.label}"؟\nلن تتأثر الفواتير المحفوظة.`, () => {
+    session.status = 'closed';
+    session.closedAt = new Date().toISOString();
+    const sessionInvs = invoices.filter(i => i.sessionId === session.id);
+    session.totalSales = sessionInvs.reduce((s,i) => s + i.total, 0);
+    session.invoiceCount = sessionInvs.length;
+    saveData('wardaSessions', sessions);
+    currentSessionId = null;
+    saveData('wardaCurrentSession', null);
+    renderStock();
+    renderSessionBar();
+    showToast(`✅ تم قفل: ${session.label}`);
+  });
+}
+
+function renderSessionBar() {
+  const bar = document.getElementById('sessionBar');
+  if (!bar) return;
+  const session = getCurrentSession();
+  if (session) {
+    bar.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--green-light);border-bottom:2px solid var(--green)">
+        <div>
+          <span style="font-size:12px;color:var(--green);font-weight:700">🟢 جلسة نشطة</span>
+          <div style="font-size:13px;font-weight:900;color:var(--text)">${session.label}</div>
+          <div style="font-size:11px;color:var(--text-mid)">${session.date}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button onclick="closeCurrentSession()" style="background:var(--red);color:#fff;border:none;padding:7px 12px;border-radius:8px;font-family:Cairo;font-size:12px;font-weight:700;cursor:pointer">🔴 قفل الجلسة</button>
+          <button onclick="openSessionsModal()" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);padding:5px 12px;border-radius:8px;font-family:Cairo;font-size:12px;font-weight:700;cursor:pointer">📋 الجلسات</button>
+        </div>
+      </div>`;
+  } else {
+    bar.innerHTML = `
+      <div style="padding:12px 14px;background:#fff3cd;border-bottom:2px solid #ffc107;text-align:center">
+        <div style="font-size:13px;color:#856404;font-weight:700;margin-bottom:8px">⚠️ لا توجد جلسة نشطة</div>
+        <div style="display:flex;gap:8px;justify-content:center">
+          <button onclick="openNewSessionPrompt()" style="background:var(--green);color:#fff;border:none;padding:9px 18px;border-radius:10px;font-family:Cairo;font-size:13px;font-weight:700;cursor:pointer">🟢 فتح جلسة جديدة</button>
+          <button onclick="openSessionsModal()" style="background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);padding:9px 14px;border-radius:10px;font-family:Cairo;font-size:13px;font-weight:700;cursor:pointer">📋 الجلسات</button>
+        </div>
+      </div>`;
+  }
+}
+
+function openSessionsModal() {
+  renderSessionsList();
+  openModal('sessionsModal');
+}
+
+function renderSessionsList() {
+  const sorted = [...sessions].sort((a,b) => b.id - a.id);
+  let html = '';
+  sorted.forEach(s => {
+    const invs = invoices.filter(i => i.sessionId === s.id);
+    const total = invs.reduce((sum,i) => sum + i.total, 0);
+    const isActive = s.status === 'active';
+    html += `
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:14px">${s.label}</div>
+            <div style="font-size:12px;color:var(--text-mid);margin-top:3px">
+              📅 ${s.date} &nbsp;|&nbsp; 🧾 ${invs.length} فاتورة &nbsp;|&nbsp; 💰 ${fmt(total)} ج
+            </div>
+          </div>
+          <span style="font-size:11px;padding:3px 8px;border-radius:20px;background:${isActive?'var(--green)':'#888'};color:#fff;white-space:nowrap">
+            ${isActive?'🟢 نشطة':'🔴 مقفلة'}
+          </span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="viewSessionInvoices(${s.id})" style="flex:1;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue);padding:6px;border-radius:8px;font-family:Cairo;font-size:12px;font-weight:700;cursor:pointer">👁️ عرض الفواتير</button>
+          ${!isActive && !currentSessionId ? `<button onclick="switchToSession(${s.id})" style="flex:1;background:var(--green-light);color:var(--green);border:1px solid var(--green);padding:6px;border-radius:8px;font-family:Cairo;font-size:12px;font-weight:700;cursor:pointer">🔓 إعادة فتح</button>` : ''}
+          <button onclick="deleteSession(${s.id})" style="background:#fff;color:var(--red);border:1px solid var(--red);padding:6px 10px;border-radius:8px;font-family:Cairo;font-size:12px;cursor:pointer">🗑️</button>
+        </div>
+      </div>`;
+  });
+  if (!html) html = '<div style="padding:24px;text-align:center;color:var(--text-light)">لا توجد جلسات بعد</div>';
+  document.getElementById('sessionsList').innerHTML = html;
+}
+
+function viewSessionInvoices(sessionId) {
+  closeModal('sessionsModal');
+  // عرض السجل مفلتر على الجلسة دي
+  window._viewSessionFilter = sessionId;
+  // navigate to log
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-log').classList.add('active');
+  renderLog(sessionId);
+}
+
+function switchToSession(sessionId) {
+  if (currentSessionId) { showToast('أغلق الجلسة الحالية أولاً', 'error'); return; }
+  const session = sessions.find(s => s.id === sessionId);
+  if (!session) return;
+  confirm2('🔓 إعادة فتح', `هل تريد إعادة فتح "${session.label}" للتعديل؟`, () => {
+    session.status = 'active';
+    currentSessionId = sessionId;
+    saveData('wardaSessions', sessions);
+    saveData('wardaCurrentSession', currentSessionId);
+    closeModal('sessionsModal');
+    renderStock();
+    renderSessionBar();
+    showToast(`✅ تم إعادة فتح: ${session.label}`);
+  });
+}
+
+function deleteSession(sessionId) {
+  const session = sessions.find(s => s.id === sessionId);
+  if (!session) return;
+  if (session.status === 'active') { showToast('أغلق الجلسة أولاً قبل حذفها', 'error'); return; }
+  confirm2('🗑️ حذف الجلسة', `هل تريد حذف "${session.label}" وكل فواتيرها؟`, () => {
+    invoices = invoices.filter(i => i.sessionId !== sessionId);
+    sessions = sessions.filter(s => s.id !== sessionId);
+    saveData('wardaInvoices', invoices);
+    saveData('wardaSessions', sessions);
+    renderSessionsList();
+    showToast('✅ تم الحذف');
+  });
+}
+
+// ==========================================
 // HELPERS
 // ==========================================
 function fmt(n) { return Number(n).toLocaleString('ar-EG'); }
@@ -1368,6 +1577,7 @@ function todayStr() {
 
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.textContent = msg;
   t.className = 'toast ' + type;
   setTimeout(() => t.classList.add('show'), 10);
@@ -1392,12 +1602,12 @@ function showScreen(name) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   event.currentTarget.classList.add('active');
-  if (name === 'stock')    renderStock();
+  if (name === 'stock')    { renderStock(); renderSessionBar(); }
   if (name === 'invoice')  renderInvoiceItems();
   if (name === 'log')      renderLog();
   if (name === 'settings') { renderPricesList(); renderProductSettingsList(); loadGeneralSettingsUI(); renderClientTargets(); }
   if (name === 'analytics') { renderAnalytics(); }
-  if (name === 'jard') { renderJardStats(); setJardMode(jardMode); renderJardHistoryList(); }
+  if (name === 'jard') { renderJardDayStatus(); renderJardList(); renderJardHistory(); }
   if (name === 'edit') {
     document.getElementById('editResult').innerHTML = '';
     document.getElementById('editSearch').value = '';
@@ -1409,7 +1619,10 @@ function showScreen(name) {
 // ==========================================
 function getSold() {
   const sold = new Array(PRODUCTS.length).fill(0);
-  invoices.forEach(inv => {
+  const sessionInvs = currentSessionId
+    ? invoices.filter(inv => inv.sessionId === currentSessionId)
+    : [];
+  sessionInvs.forEach(inv => {
     inv.items.forEach(item => {
       const idx = PRODUCTS.findIndex(p => p.name === item.name);
       if (idx >= 0) sold[idx] += item.qty;
@@ -1547,6 +1760,12 @@ function calcInvSummary() {
 }
 
 function saveInvoice() {
+  if (!currentSessionId) {
+    confirm2('⚠️ لا توجد جلسة نشطة', 'يجب فتح جلسة أولاً قبل إنشاء فاتورة. هل تريد فتح جلسة جديدة؟', () => {
+      openNewSessionPrompt();
+    });
+    return;
+  }
   const client = document.getElementById('clientName').value.trim();
   if (!client) { showToast('أدخل اسم العميل أولاً', 'error'); return; }
 
@@ -1575,6 +1794,7 @@ function saveInvoice() {
   const doSave = () => {
     const inv = {
       id: invCounter++,
+      sessionId: currentSessionId,
       client,
       location: document.getElementById('clientLocation').value.trim(),
       phone: document.getElementById('clientPhone').value.trim(),
@@ -1625,11 +1845,17 @@ function buildClientsList() {
 // ==========================================
 // SCREEN 3: LOG
 // ==========================================
-function renderLog() {
+function renderLog(filterSessionId) {
   const q = document.getElementById('logSearch')?.value?.trim().toLowerCase() || '';
-  const filtered = [...invoices].reverse().filter(inv =>
+  let source = [...invoices].reverse();
+  if (filterSessionId) source = source.filter(inv => inv.sessionId === filterSessionId);
+  const filtered = source.filter(inv =>
     !q || inv.client.toLowerCase().includes(q) || String(inv.id).includes(q)
   );
+
+  const sessionLabel = filterSessionId
+    ? (sessions.find(s => s.id === filterSessionId)?.label || '')
+    : '';
 
   if (filtered.length === 0) {
     document.getElementById('logList').innerHTML = `
@@ -1640,14 +1866,30 @@ function renderLog() {
     return;
   }
 
-  let html = '';
+  // header لو في فلتر جلسة
+  let headerHtml = '';
+  if (filterSessionId) {
+    const total = filtered.reduce((s,i) => s + i.total, 0);
+    headerHtml = `
+      <div style="padding:10px 14px;background:var(--blue-light);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12px;color:var(--blue);font-weight:700">📋 ${sessionLabel}</div>
+          <div style="font-size:11px;color:var(--text-mid)">${filtered.length} فاتورة | ${fmt(total)} ج</div>
+        </div>
+        <button onclick="renderLog()" style="background:none;border:1px solid var(--blue);padding:4px 10px;border-radius:8px;font-family:Cairo;font-size:12px;color:var(--blue);cursor:pointer">عرض الكل</button>
+      </div>`;
+  }
+
+  let html = headerHtml;
   filtered.forEach(inv => {
+    const invSession = sessions.find(s => s.id === inv.sessionId);
     html += `
       <div class="log-item">
         <div class="log-header" onclick="toggleLogDetails('log_${inv.id}')">
           <div>
             <div class="log-client">${inv.client} <span class="badge badge-green">#${inv.id}</span></div>
             <div class="log-meta">${inv.date} | ${inv.location || 'بدون موقع'} | ${inv.items.length} صنف</div>
+            ${invSession ? `<div style="font-size:11px;color:var(--text-light);margin-top:2px">📁 ${invSession.label}</div>` : ''}
           </div>
           <div class="log-total">${fmt(inv.total)} ج</div>
         </div>
@@ -2007,50 +2249,69 @@ const PROD_META = [
   { pakPerCart:  1, weight: '500gm' },
 ];
 
-let jardMode = 'load'; // 'load' or 'jard'
 let jardHistory = loadData('wardaJardHistory', []);
 
-function setJardMode(mode) {
-  jardMode = mode;
-  const isLoad = mode === 'load';
-  document.getElementById('jardModeLoad').className = 'btn btn-sm ' + (isLoad ? 'btn-primary' : 'btn-secondary');
-  document.getElementById('jardModeJard').className = 'btn btn-sm ' + (!isLoad ? 'btn-primary' : 'btn-secondary');
-  document.getElementById('jardModeLoad').style.flex = '1';
-  document.getElementById('jardModeJard').style.flex = '1';
-  document.getElementById('jardCardTitle').textContent = isLoad ? '🚛 تحميل السيارة' : '📦 جرد نهاية اليوم';
-  // show review note & hide save for jard mode
-  document.getElementById('jardReviewNote').style.display = isLoad ? 'none' : 'block';
-  document.getElementById('jardActions').style.display    = isLoad ? 'flex' : 'none';
-  renderJardList();
-}
+// ==========================================
+// JARD PAGE - NEW DESIGN
+// ==========================================
 
-function renderJardStats() {
-  // last load entry
-  const lastLoad = [...jardHistory].reverse().find(h => h.type === 'load');
-  const lastJard = [...jardHistory].reverse().find(h => h.type === 'jard');
-  document.getElementById('jardStats').innerHTML = `
-    <div class="stat-box">
-      <div class="stat-val num">${lastLoad ? lastLoad.totalCart : '—'}</div>
-      <div class="stat-lbl">آخر تحميل (كرتونة)</div>
+function renderJardDayStatus() {
+  const el = document.getElementById('jardDayStatus');
+  if (!el) return;
+  const current = getCurrentStock();
+  const sold    = getSold();
+  const session = getCurrentSession();
+
+  if (!session) {
+    el.innerHTML = `
+      <div style="padding:20px;text-align:center;background:#fff3cd;border-radius:0 0 12px 12px">
+        <div style="font-size:13px;color:#856404;font-weight:700;margin-bottom:10px">⚠️ لا توجد جلسة نشطة</div>
+        <button onclick="openNewSessionPrompt()" style="background:var(--green);color:#fff;border:none;padding:9px 18px;border-radius:10px;font-family:Cairo;font-size:13px;font-weight:700;cursor:pointer">🟢 فتح جلسة جديدة</button>
+      </div>`;
+    return;
+  }
+
+  let totalLoaded = 0, totalSold = 0, totalRem = 0;
+  let rows = '';
+  PRODUCTS.forEach((p, i) => {
+    const loaded = stock[i] || 0;
+    const soldQ  = sold[i]  || 0;
+    const rem    = current[i] || 0;
+    if (loaded === 0 && soldQ === 0) return;
+    totalLoaded += loaded;
+    totalSold   += soldQ;
+    totalRem    += rem;
+    const remColor = rem === 0 ? 'var(--red)' : rem < 3 ? '#e67e22' : 'var(--green)';
+    rows += `
+      <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px">
+        <div>
+          <div style="font-weight:700">${p.name}</div>
+          <div style="font-size:11px;color:var(--text-light)">${PROD_META[i]?.weight}</div>
+        </div>
+        <div style="text-align:center;color:var(--blue);font-weight:700">${loaded}</div>
+        <div style="text-align:center;color:var(--red);font-weight:700">${soldQ}</div>
+        <div style="text-align:center;font-weight:900;color:${remColor}">${rem}</div>
+      </div>`;
+  });
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;padding:8px 14px;background:var(--green-light);border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:var(--text-mid)">
+      <span>المنتج</span>
+      <span style="text-align:center">تحميل</span>
+      <span style="text-align:center">مُباع</span>
+      <span style="text-align:center">متبقي</span>
     </div>
-    <div class="stat-box blue">
-      <div class="stat-val num">${lastLoad ? lastLoad.totalPak : '—'}</div>
-      <div class="stat-lbl">آخر تحميل (باكو)</div>
-    </div>
-    <div class="stat-box gold">
-      <div class="stat-val num">${lastJard ? lastJard.totalCart : '—'}</div>
-      <div class="stat-lbl">آخر جرد (كرتونة)</div>
-    </div>
-    <div class="stat-box ${lastJard ? 'red' : ''}">
-      <div class="stat-val num">${jardHistory.length}</div>
-      <div class="stat-lbl">سجلات التحميل والجرد</div>
-    </div>
-  `;
+    ${rows || '<div style="padding:20px;text-align:center;color:var(--text-light)">لا يوجد تحميل — اضغط تعديل التحميل</div>'}
+    <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;padding:10px 14px;background:var(--green);color:#fff;font-weight:900;font-size:14px;border-radius:0 0 12px 12px">
+      <span>الإجمالي</span>
+      <span style="text-align:center">${totalLoaded}</span>
+      <span style="text-align:center">${totalSold}</span>
+      <span style="text-align:center">${totalRem}</span>
+    </div>`;
 }
 
 function renderJardList() {
   let html = '';
-
   PRODUCTS.forEach((p, i) => {
     const meta = PROD_META[i];
     html += `
@@ -2067,169 +2328,228 @@ function renderJardList() {
         <div class="jard-result" id="jresult_${i}">0</div>
       </div>`;
   });
-
-  document.getElementById('jardList').innerHTML = html;
+  const el = document.getElementById('jardList');
+  if (el) el.innerHTML = html;
   updateJardTotals();
 }
 
-// When user enters كرتونة → auto-fill باكو = cart * pakPerCart (extra pak stays)
 function onCartChange(i) {
-  const meta = PROD_META[i];
-  const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
-  // Fill باكو with equivalent packs only if the pak field is 0 or empty
+  const cart  = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
   const pakEl = document.getElementById('jpak_'+i);
-  const curPak = parseInt(pakEl?.value) || 0;
-  // Only auto-fill if pak field not manually set (simple heuristic: divisible by pakPerCart)
-  const autoPak = cart * meta.pakPerCart;
-  if (pakEl) pakEl.value = autoPak;
-  const totalCart = cart; // cart already represents full cartons
+  if (pakEl) pakEl.value = cart * PROD_META[i].pakPerCart;
   const resEl = document.getElementById('jresult_'+i);
   if (resEl) resEl.textContent = cart;
   updateJardTotals();
 }
 
-// When user enters باكو → convert to كرتونة automatically
 function onPakChange(i) {
-  const meta = PROD_META[i];
-  const pak  = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
-  const autoCart = Math.floor(pak / meta.pakPerCart);
-  const remPak   = pak % meta.pakPerCart;
-  const cartEl = document.getElementById('jcart_'+i);
+  const pak      = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
+  const autoCart = Math.floor(pak / PROD_META[i].pakPerCart);
+  const remPak   = pak % PROD_META[i].pakPerCart;
+  const cartEl   = document.getElementById('jcart_'+i);
   if (cartEl) cartEl.value = autoCart;
-  const totalCart = autoCart + remPak / meta.pakPerCart;
+  const total = autoCart + remPak / PROD_META[i].pakPerCart;
   const resEl = document.getElementById('jresult_'+i);
-  if (resEl) resEl.textContent = remPak === 0 ? autoCart : totalCart.toFixed(2);
+  if (resEl) resEl.textContent = remPak === 0 ? autoCart : total.toFixed(2);
   updateJardTotals();
 }
 
 function updateJardTotals() {
   let totCart = 0, totPak = 0, totFinal = 0;
   PRODUCTS.forEach((p, i) => {
-    const meta = PROD_META[i];
     const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
-    const pak  = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
+    const pak  = parseInt(document.getElementById('jpak_'+i)?.value)  || 0;
     totCart  += cart;
     totPak   += pak;
-    totFinal += cart + pak / meta.pakPerCart;
+    totFinal += cart + pak / PROD_META[i].pakPerCart;
   });
-  const elCart  = document.getElementById('jTotCart');
-  const elPak   = document.getElementById('jTotPak');
-  const elFinal = document.getElementById('jTotFinal');
-  if (elCart)  elCart.textContent  = totCart;
-  if (elPak)   elPak.textContent   = totPak;
-  if (elFinal) elFinal.textContent = totFinal % 1 === 0 ? totFinal : totFinal.toFixed(1);
+  const c = document.getElementById('jTotCart');
+  const pk = document.getElementById('jTotPak');
+  const f  = document.getElementById('jTotFinal');
+  if (c)  c.textContent  = totCart;
+  if (pk) pk.textContent = totPak;
+  if (f)  f.textContent  = totFinal % 1 === 0 ? totFinal : totFinal.toFixed(1);
 }
 
 function resetJardInputs() {
   PRODUCTS.forEach((p, i) => {
-    const c = document.getElementById('jcart_'+i);
+    const c  = document.getElementById('jcart_'+i);
     const pk = document.getElementById('jpak_'+i);
-    if (c) c.value = 0;
+    const r  = document.getElementById('jresult_'+i);
+    if (c)  c.value  = 0;
     if (pk) pk.value = 0;
-    const r = document.getElementById('jresult_'+i);
-    if (r) r.textContent = '0';
+    if (r)  r.textContent = '0';
   });
   updateJardTotals();
 }
 
-function saveJard() {
-  // collect items
+function saveJardEntry() {
   const items = [];
-  let totCart = 0, totPak = 0, totFinal = 0;
-  let hasData = false;
-
+  let totCart = 0, totPak = 0, totFinal = 0, hasData = false;
   PRODUCTS.forEach((p, i) => {
     const meta = PROD_META[i];
     const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
-    const pak  = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
+    const pak  = parseInt(document.getElementById('jpak_'+i)?.value)  || 0;
     const finalCart = cart + pak / meta.pakPerCart;
-    const finalPak  = cart * meta.pakPerCart + pak;
     if (cart > 0 || pak > 0) hasData = true;
     totCart  += cart;
     totPak   += pak;
     totFinal += finalCart;
-    items.push({ name: p.name, cart, pak, pakPerCart: meta.pakPerCart, finalCart, finalPak });
+    items.push({ name: p.name, cart, pak, pakPerCart: meta.pakPerCart,
+                 finalCart, finalPak: cart * meta.pakPerCart + pak });
   });
-
   if (!hasData) { showToast('أدخل كميات أولاً', 'error'); return; }
 
-  const typeLabel = jardMode === 'load' ? 'تحميل' : 'جرد';
-  confirm2(
-    `حفظ ${typeLabel}`,
-    `حفظ عملية ${typeLabel} بإجمالي ${totCart} كرتونة + ${totPak} باكو = ${totFinal.toFixed(1)} كرتونة إجمالي؟`,
-    () => {
-      const entry = {
-        id: Date.now(),
-        type: jardMode,
-        date: todayStr(),
-        time: new Date().toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}),
-        items,
-        totalCart: totCart,
-        totalPak:  totPak,
-        totalFinal: parseFloat(totFinal.toFixed(2))
-      };
+  confirm2('💾 حفظ الجرد', `حفظ جرد بإجمالي ${totCart} كرتونة + ${totPak} باكو؟`, () => {
+    const session = getCurrentSession();
+    const sold    = getSold();
+    const current = getCurrentStock();
 
-      jardHistory.push(entry);
-      saveData('wardaJardHistory', jardHistory);
+    // حساب المبيعات من الجلسة الحالية
+    const salesItems = PRODUCTS.map((p, i) => ({
+      name: p.name,
+      loaded: stock[i] || 0,
+      sold:   sold[i]  || 0,
+      remaining: current[i] || 0
+    }));
 
-      // If it's a LOAD → update the main stock (opening stock)
-      if (jardMode === 'load') {
-        items.forEach((it, i) => {
-          stock[i] = Math.round(it.finalCart);
-        });
-        saveData('wardaStock', stock);
-        showToast(`✅ تم حفظ التحميل وتحديث المخزن تلقائياً`);
-      } else {
-        showToast(`✅ تم حفظ الجرد بنجاح`);
-      }
+    const entry = {
+      id:         Date.now(),
+      type:       'jard',
+      sessionId:  currentSessionId,
+      sessionLabel: session?.label || '',
+      date:       todayStr(),
+      time:       new Date().toLocaleTimeString('ar', {hour:'2-digit', minute:'2-digit'}),
+      loadItems:  salesItems,          // التحميل والمبيعات من الجلسة
+      jardItems:  items,               // الجرد الفعلي المُدخل
+      totalCart:  totCart,
+      totalPak:   totPak,
+      totalFinal: parseFloat(totFinal.toFixed(2)),
+      totalLoaded: salesItems.reduce((s,it) => s + it.loaded, 0),
+      totalSold:   salesItems.reduce((s,it) => s + it.sold, 0),
+    };
 
-      resetJardInputs();
-      renderJardStats();
-      renderJardHistoryList();
-      renderStock();
-    }
-  );
+    jardHistory.push(entry);
+    saveData('wardaJardHistory', jardHistory);
+    resetJardInputs();
+    renderJardHistory();
+    showToast('✅ تم حفظ الجرد');
+  });
 }
 
-function renderJardHistoryList() {
-  const list = [...jardHistory].reverse();
-  if (list.length === 0) {
-    document.getElementById('jardHistory').innerHTML =
-      `<div class="empty-state"><div class="empty-icon">📦</div><p>لا يوجد سجل بعد</p></div>`;
+// دالة saveJard القديمة (للتوافق مع الكود القديم)
+function saveJard() { saveJardEntry(); }
+
+function renderJardHistory() {
+  const el = document.getElementById('jardHistory');
+  if (!el) return;
+
+  const q = document.getElementById('jardSearchInput')?.value?.trim().toLowerCase() || '';
+  const list = [...jardHistory].reverse().filter(e =>
+    !q || e.date?.includes(q) || e.sessionLabel?.toLowerCase().includes(q) ||
+    e.time?.includes(q)
+  );
+
+  // أيضاً أضف الجلسات المقفلة كسجلات
+  const closedSessions = [...sessions].filter(s => s.status === 'closed').reverse().filter(s =>
+    !q || s.date?.includes(q) || s.label?.toLowerCase().includes(q)
+  );
+
+  if (list.length === 0 && closedSessions.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><p>لا يوجد سجل بعد</p></div>`;
     return;
   }
 
+  // دمج الجلسات وسجلات الجرد وترتيبها بالتاريخ
   let html = '';
-  list.forEach(entry => {
-    const isLoad = entry.type === 'load';
-    const bgColor = isLoad ? 'var(--green)' : 'var(--blue)';
-    const label   = isLoad ? 'تحميل' : 'جرد';
-    const filledItems = entry.items.filter(it => it.cart > 0 || it.pak > 0);
 
+  closedSessions.forEach(s => {
+    const invs    = invoices.filter(inv => inv.sessionId === s.id);
+    const total   = invs.reduce((sum, inv) => sum + inv.total, 0);
+    const soldMap = {};
+    invs.forEach(inv => inv.items.forEach(it => {
+      soldMap[it.name] = (soldMap[it.name] || 0) + it.qty;
+    }));
+
+    const jardEntry = jardHistory.find(j => j.sessionId === s.id);
+
+    html += `
+      <div class="jard-hist-item" onclick="toggleJardHist('jsess_${s.id}')">
+        <div class="jard-hist-header">
+          <div>
+            <div class="jard-hist-title">📁 ${s.label}</div>
+            <div class="jard-hist-meta">
+              ${s.date} | ${invs.length} فاتورة | مبيعات: ${fmt(total)} ج
+            </div>
+          </div>
+          <span class="jard-hist-badge" style="background:#88888820;color:#666">🔴 مقفلة</span>
+        </div>
+        <div class="jard-hist-details" id="jsess_${s.id}">
+          <div style="padding:8px 14px;background:var(--green-light);font-size:12px;font-weight:700;color:var(--text-mid);display:grid;grid-template-columns:1fr 50px 50px 50px">
+            <span>المنتج</span><span style="text-align:center">تحميل</span><span style="text-align:center">مُباع</span><span style="text-align:center">متبقي</span>
+          </div>
+          ${PRODUCTS.map((p,i) => {
+            const loaded = jardEntry?.loadItems?.[i]?.loaded ?? '—';
+            const sold   = soldMap[p.name] || 0;
+            const rem    = jardEntry?.loadItems?.[i]?.remaining ?? '—';
+            return `
+              <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px">
+                <span>${p.name}</span>
+                <span style="text-align:center;color:var(--blue)">${loaded}</span>
+                <span style="text-align:center;color:var(--red)">${sold}</span>
+                <span style="text-align:center;font-weight:700;color:var(--green)">${rem}</span>
+              </div>`;
+          }).join('')}
+          ${jardEntry ? `<div style="padding:8px 14px;font-size:12px;color:var(--text-mid)">📦 جرد فعلي: ${jardEntry.totalCart} كرتونة + ${jardEntry.totalPak} باكو</div>` : ''}
+        </div>
+      </div>`;
+  });
+
+  // سجلات جرد بدون جلسة مرتبطة
+  list.filter(e => !closedSessions.find(s => s.id === e.sessionId)).forEach(entry => {
+    const filledItems = entry.jardItems?.filter(it => it.cart > 0 || it.pak > 0) || [];
     html += `
       <div class="jard-hist-item" onclick="toggleJardHist('jh_${entry.id}')">
         <div class="jard-hist-header">
           <div>
-            <div class="jard-hist-title">${label} — ${entry.date} ${entry.time || ''}</div>
-            <div class="jard-hist-meta">${entry.totalCart} كرتونة + ${entry.totalPak} باكو = ${entry.totalFinal} كرتونة إجمالي</div>
+            <div class="jard-hist-title">📦 جرد — ${entry.date} ${entry.time || ''}</div>
+            <div class="jard-hist-meta">${entry.totalCart} كرتونة + ${entry.totalPak} باكو</div>
           </div>
-          <span class="jard-hist-badge" style="background:${bgColor}20;color:${bgColor}">${label}</span>
+          <button onclick="event.stopPropagation();deleteJardEntry(${entry.id})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer">🗑️</button>
         </div>
         <div class="jard-hist-details" id="jh_${entry.id}">
           ${filledItems.map(it => `
             <div class="jard-hist-detail-row">
               <span>${it.name}</span>
-              <span>${it.cart} كرتونة + ${it.pak} باكو = <b>${it.finalCart.toFixed(it.finalCart%1===0?0:2)}</b> كرتونة</span>
+              <span>${it.cart} كرتونة + ${it.pak} باكو = <b>${it.finalCart?.toFixed?.(it.finalCart%1===0?0:2) ?? it.finalCart}</b> كرتونة</span>
             </div>`).join('')}
         </div>
       </div>`;
   });
-  document.getElementById('jardHistory').innerHTML = html;
+
+  el.innerHTML = html || `<div class="empty-state"><div class="empty-icon">📦</div><p>لا توجد نتائج</p></div>`;
+}
+
+function deleteJardEntry(id) {
+  confirm2('حذف', 'هل تريد حذف هذا السجل؟', () => {
+    jardHistory = jardHistory.filter(e => e.id !== id);
+    saveData('wardaJardHistory', jardHistory);
+    renderJardHistory();
+    showToast('✅ تم الحذف');
+  });
 }
 
 function toggleJardHist(id) {
   document.getElementById(id)?.classList.toggle('open');
 }
+
+// دالة قديمة للتوافق
+function renderJardHistoryList() { renderJardHistory(); }
+function renderJardStats() { renderJardDayStatus(); }
+function setJardMode(mode) {}
+
+
+
 
 // ==========================================
 // GENERAL SETTINGS
@@ -2266,23 +2586,35 @@ function saveGeneralSettings() {
 let customProducts = loadData('wardaProducts', null);
 
 function applyProductSettings() {
-  if (!customProducts) return;
-  if (customProducts.length !== PRODUCTS.length) {
-    while (PRODUCTS.length > customProducts.length) { PRODUCTS.pop(); PROD_META.pop(); }
-    while (PRODUCTS.length < customProducts.length) {
-      PRODUCTS.push({ name: 'منتج', price: 0 });
-      PROD_META.push({ pakPerCart: 1, weight: '—' });
+  if (!customProducts || customProducts.length === 0) return;
+
+  // طابق كل صنف محفوظ باسمه في قائمة الهارد كود
+  customProducts.forEach(cp => {
+    if (!cp.name) return;
+    const idx = PRODUCTS.findIndex(p => p.name === cp.name);
+    if (idx >= 0) {
+      // الصنف موجود في الهارد كود — حدّث بياناته المحفوظة
+      if (cp.price)                     PRODUCTS[idx].price         = cp.price;
+      if (cp.pakPerCart && PROD_META[idx]) PROD_META[idx].pakPerCart = cp.pakPerCart;
+      if (cp.weight     && PROD_META[idx]) PROD_META[idx].weight     = cp.weight;
+    } else if (cp.name && cp.name !== 'منتج') {
+      // صنف مضاف يدوياً من قِبَل المستخدم — أضفه في النهاية
+      PRODUCTS.push({ name: cp.name, price: cp.price || 0 });
+      PROD_META.push({ pakPerCart: cp.pakPerCart || 1, weight: cp.weight || '—' });
     }
-  }
-  // Ensure stock array has enough elements for all products
-  while (stock.length < PRODUCTS.length) stock.push(0);
-  customProducts.forEach((cp, i) => {
-    if (!PRODUCTS[i]) return;
-    if (cp.name)       PRODUCTS[i].name       = cp.name;
-    if (cp.price)      PRODUCTS[i].price      = cp.price;
-    if (cp.pakPerCart) PROD_META[i].pakPerCart = cp.pakPerCart;
-    if (cp.weight)     PROD_META[i].weight     = cp.weight;
   });
+
+  // تأكد إن stock فيه عدد كافي من العناصر
+  while (stock.length < PRODUCTS.length) stock.push(0);
+
+  // احفظ القائمة الكاملة (٢٠ صنف أو أكثر) في localStorage
+  const fullList = PRODUCTS.map((p, i) => ({
+    name: p.name, price: p.price,
+    pakPerCart: PROD_META[i]?.pakPerCart || 1,
+    weight:     PROD_META[i]?.weight     || '—'
+  }));
+  saveData('wardaProducts', fullList);
+  customProducts = fullList;
 }
 
 function renderProductSettingsList() {
@@ -2385,11 +2717,14 @@ function getFilteredInvoices() {
     if (parts.length < 3) return false;
 
     let day, month, year;
-    // Detect DD/MM/YYYY vs MM/DD/YYYY: if first part > 12 it's day
-    if (parseInt(parts[0]) > 12) {
+    if (parseInt(parts[0]) > 31) {
+      // YYYY/MM/DD (الصيغة الجديدة)
+      [year, month, day] = parts;
+    } else if (parseInt(parts[0]) > 12) {
+      // DD/MM/YYYY
       [day, month, year] = parts;
     } else {
-      // Could be either, assume DD/MM/YYYY (Arabic standard)
+      // DD/MM/YYYY (افتراضي)
       [day, month, year] = parts;
     }
     const d = new Date(parseInt(year), parseInt(month)-1, parseInt(day));
@@ -2463,369 +2798,4 @@ function renderAnalytics() {
     const pct = Math.round((data.val / maxProdVal)*100);
     prodHtml += `
       <div class="an-prod-row">
-        <div class="an-rank ${rankClass}">${i+1}</div>
-        <div class="an-bar-wrap">
-          <div class="an-bar-label">${name} <span>${data.qty} كرتونة</span></div>
-          <div class="an-bar-bg"><div class="an-bar-fill ${i===0?'gold-bar':''}" style="width:${pct}%"></div></div>
-        </div>
-        <div class="an-val">${fmt(data.val)}<br><span style="font-size:10px;color:var(--text-light);font-weight:500">ج</span></div>
-      </div>`;
-  });
-  document.getElementById('anTopProducts').innerHTML = prodHtml;
-
-  // ── Top clients ──
-  const clientMap = {};
-  filtered.forEach(inv => {
-    if (!clientMap[inv.client]) clientMap[inv.client] = { total:0, count:0, items:{}, location: inv.location||'' };
-    clientMap[inv.client].total += inv.total;
-    clientMap[inv.client].count++;
-    inv.items.forEach(it => {
-      if (!clientMap[inv.client].items[it.name]) clientMap[inv.client].items[it.name] = 0;
-      clientMap[inv.client].items[it.name] += it.qty;
-    });
-  });
-  const topClients = Object.entries(clientMap).sort((a,b) => b[1].total - a[1].total).slice(0,5);
-  const maxClientVal = topClients[0]?.[1].total || 1;
-
-  let clientHtml = topClients.length === 0
-    ? `<div class="empty-state"><div class="empty-icon">👤</div><p>لا توجد بيانات</p></div>`
-    : '';
-
-  topClients.forEach(([name, data], i) => {
-    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const pct = Math.round((data.total / maxClientVal)*100);
-    clientHtml += `
-      <div class="an-prod-row">
-        <div class="an-rank ${rankClass}">${i+1}</div>
-        <div class="an-bar-wrap">
-          <div class="an-bar-label">${name} <span>${data.count} فاتورة</span></div>
-          <div class="an-bar-bg"><div class="an-bar-fill ${i===0?'gold-bar':''}" style="width:${pct}%"></div></div>
-        </div>
-        <div class="an-val">${fmt(data.total)}<br><span style="font-size:10px;color:var(--text-light);font-weight:500">ج</span></div>
-      </div>`;
-  });
-  document.getElementById('anTopClients').innerHTML = clientHtml;
-
-  // ── Client details ──
-  const allClients = Object.entries(clientMap).sort((a,b) => b[1].total - a[1].total);
-  let detailHtml = allClients.length === 0
-    ? `<div class="empty-state"><div class="empty-icon">📋</div><p>لا توجد بيانات</p></div>`
-    : '';
-
-  allClients.forEach(([name, data], i) => {
-    const topItem = Object.entries(data.items).sort((a,b)=>b[1]-a[1])[0];
-    const itemsHtml = Object.entries(data.items)
-      .sort((a,b)=>b[1]-a[1])
-      .map(([prod, qty]) => `
-        <div class="an-client-prod-row">
-          <span>${prod}</span>
-          <span>${qty} كرتونة</span>
-        </div>`).join('');
-
-    detailHtml += `
-      <div class="an-client-item">
-        <div class="an-client-header" onclick="toggleAnClient('anc_${i}')">
-          <div>
-            <div class="an-client-name">${name}</div>
-            <div class="an-client-meta">${data.count} فاتورة | ${data.location} | الأكثر: ${topItem?.[0]||'—'}</div>
-          </div>
-          <div class="an-client-total">${fmt(data.total)} ج</div>
-        </div>
-        <div class="an-client-details" id="anc_${i}">
-          <div style="font-size:11px;font-weight:700;color:var(--text-light);margin-bottom:6px">تفصيل المشتريات:</div>
-          ${itemsHtml}
-          <div class="an-client-prod-row" style="margin-top:6px;font-size:13px;font-weight:900;color:var(--green)">
-            <span>الإجمالي</span><span>${fmt(data.total)} جنيه</span>
-          </div>
-        </div>
-      </div>`;
-  });
-  document.getElementById('anClientDetails').innerHTML = detailHtml;
-}
-
-function renderDailyChart(filtered) {
-  // Group by date
-  const dayMap = {};
-  filtered.forEach(inv => {
-    const d = inv.date;
-    if (!dayMap[d]) dayMap[d] = 0;
-    dayMap[d] += inv.total;
-  });
-
-  const days  = Object.keys(dayMap).sort((a,b) => {
-    const pa = a.split('/'), pb = b.split('/');
-    return new Date(pa[2],pa[1]-1,pa[0]) - new Date(pb[2],pb[1]-1,pb[0]);
-  });
-  const vals  = days.map(d => dayMap[d]);
-
-  const canvas = document.getElementById('anChartDaily');
-  const ctx    = canvas.getContext('2d');
-
-  if (days.length === 0) {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.font = '14px Cairo';
-    ctx.fillStyle = '#aaa';
-    ctx.textAlign = 'center';
-    ctx.fillText('لا توجد بيانات', canvas.width/2, 80);
-    return;
-  }
-
-  // Simple canvas bar chart
-  const W = canvas.offsetWidth || 320;
-  canvas.width  = W;
-  canvas.height = 180;
-  ctx.clearRect(0,0,W,180);
-
-  const pad   = { t:20, b:40, l:10, r:10 };
-  const chartW = W - pad.l - pad.r;
-  const chartH = 180 - pad.t - pad.b;
-  const maxVal = Math.max(...vals) || 1;
-  const barW   = Math.max(8, Math.min(36, chartW / days.length - 6));
-  const gap    = (chartW - barW * days.length) / (days.length + 1);
-
-  // Grid lines
-  ctx.strokeStyle = '#e0e0e0';
-  ctx.lineWidth   = 1;
-  [0.25,0.5,0.75,1].forEach(f => {
-    const y = pad.t + chartH * (1-f);
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
-  });
-
-  // Bars
-  days.forEach((d, i) => {
-    const x   = pad.l + gap + i*(barW+gap);
-    const h   = (vals[i]/maxVal) * chartH;
-    const y   = pad.t + chartH - h;
-
-    // gradient fill
-    const grad = ctx.createLinearGradient(0,y,0,y+h);
-    grad.addColorStop(0,'#2d8a50');
-    grad.addColorStop(1,'#1a6b3a');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW, h, [4,4,0,0]);
-    ctx.fill();
-
-    // value on top
-    if (h > 20) {
-      ctx.fillStyle = '#fff';
-      ctx.font = `bold ${Math.min(10,barW*0.55)}px Tajawal`;
-      ctx.textAlign = 'center';
-      ctx.fillText(fmt(Math.round(vals[i]/1000))+'k', x+barW/2, y+12);
-    }
-
-    // date label
-    ctx.fillStyle = '#888';
-    ctx.font = '9px Cairo';
-    ctx.textAlign = 'center';
-    const label = d.split('/').slice(0,2).join('/');
-    ctx.fillText(label, x+barW/2, 180-pad.b+14);
-  });
-}
-
-function toggleAnClient(id) {
-  document.getElementById(id)?.classList.toggle('open');
-}
-
-// ==========================================
-// WHATSAPP SHARE
-// ==========================================
-function shareWhatsApp(id) {
-  const inv = invoices.find(i => i.id === id);
-  if (!inv) return;
-  const company = generalSettings?.company || 'الوردة للدخان';
-  const agent   = generalSettings?.agent   || 'عادل صابر';
-
-  // بناء كارت الفاتورة كصورة
-  const card = document.createElement('div');
-  card.style.cssText = `
-    position:fixed; left:-9999px; top:0;
-    width:360px; padding:20px; background:#fff;
-    font-family:Cairo,sans-serif; direction:rtl;
-    border-radius:16px; box-shadow:0 4px 20px rgba(0,0,0,0.15);
-  `;
-  let itemsHtml = inv.items.map(it => `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px">
-      <span>${it.name}</span>
-      <span>${it.qty} × ${fmt(it.price)} = <b>${fmt(it.qty*it.price)} ج</b></span>
-    </div>`).join('');
-  card.innerHTML = `
-    <div style="background:linear-gradient(135deg,#1a6b3a,#2e9e5b);color:#fff;padding:16px;border-radius:12px;margin-bottom:14px;text-align:center">
-      <div style="font-size:22px;margin-bottom:4px">🌹</div>
-      <div style="font-size:18px;font-weight:900">${company}</div>
-      <div style="font-size:13px;opacity:0.9">سيستم المندوب — ${agent}</div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:#555">
-      <span>👤 ${inv.client}</span>
-      <span>📅 ${inv.date}</span>
-    </div>
-    ${inv.location ? `<div style="font-size:12px;color:#777;margin-bottom:10px">📍 ${inv.location}</div>` : ''}
-    <div style="font-size:12px;color:#999;margin-bottom:8px">🧾 فاتورة رقم #${inv.id}</div>
-    <div style="border-top:2px solid #eee;padding-top:10px">${itemsHtml}</div>
-    ${inv.discountPct>0||inv.discountFixed>0 ? `<div style="text-align:left;color:#e74c3c;font-size:13px;margin-top:8px">💸 خصم: ${fmt(inv.subtotal-inv.total)} ج</div>` : ''}
-    <div style="background:#1a6b3a;color:#fff;text-align:center;padding:12px;border-radius:10px;margin-top:12px;font-size:18px;font-weight:900">
-      ✅ الإجمالي: ${fmt(inv.total)} جنيه
-    </div>`;
-  document.body.appendChild(card);
-
-  html2canvas(card, { scale:2, useCORS:true, backgroundColor:'#fff' }).then(canvas => {
-    document.body.removeChild(card);
-    canvas.toBlob(blob => {
-      if (!blob) return;
-      const file = new File([blob], `فاتورة-${inv.id}.png`, { type:'image/png' });
-      if (navigator.canShare && navigator.canShare({ files:[file] })) {
-        navigator.share({ files:[file], title:`فاتورة ${inv.client}` }).catch(()=>{});
-      } else {
-        // fallback — تحميل الصورة
-        const a = document.createElement('a');
-        a.href = canvas.toDataURL();
-        a.download = `فاتورة-${inv.id}.png`;
-        a.click();
-        showToast('📥 تم تحميل الفاتورة كصورة');
-      }
-    }, 'image/png');
-  }).catch(() => {
-    document.body.removeChild(card);
-    showToast('حدث خطأ في إنشاء الصورة', 'error');
-  });
-}
-
-// ==========================================
-// MONTHLY TARGET PER CLIENT
-// ==========================================
-let clientTargets = loadData('wardaClientTargets', {});
-
-function getClientMonthTotal(clientName) {
-  const now = new Date();
-  const monthPrefix = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}`;
-  return invoices
-    .filter(inv => inv.client === clientName && inv.date && inv.date.startsWith(monthPrefix))
-    .reduce((s, inv) => s + inv.total, 0);
-}
-
-function getCurrentMonthLabel() {
-  const now = new Date();
-  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
-  return `${months[now.getMonth()]} ${now.getFullYear()}`;
-}
-
-function updateClientTarget() {
-  const name = document.getElementById('clientName')?.value.trim();
-  const box  = document.getElementById('clientTargetBox');
-  if (!name || !clientTargets[name]) { box.style.display = 'none'; return; }
-  const target = clientTargets[name];
-  const sold   = getClientMonthTotal(name);
-  const rem    = Math.max(0, target - sold);
-  const pct    = Math.min(100, Math.round((sold / target) * 100));
-  box.style.display = 'block';
-  document.getElementById('clientTargetAmt').textContent  = fmt(target) + ' ج';
-  document.getElementById('clientTargetSold').textContent = fmt(sold)   + ' ج';
-  const remEl = document.getElementById('clientTargetRem');
-  remEl.textContent  = fmt(rem) + ' ج';
-  remEl.style.color  = rem === 0 ? 'var(--red)' : 'var(--green)';
-  document.getElementById('clientTargetBar').style.width = pct + '%';
-}
-
-function setClientTarget(name, target) {
-  if (!name) return;
-  clientTargets[name] = target;
-  saveData('wardaClientTargets', clientTargets);
-}
-
-function addClientTarget() {
-  const name   = document.getElementById('newTargetClient')?.value.trim();
-  const target = parseFloat(document.getElementById('newTargetAmt')?.value) || 0;
-  if (!name)   { showToast('اكتب اسم العميل أولاً', 'error'); return; }
-  if (!target) { showToast('اكتب الهدف الشهري أولاً', 'error'); return; }
-  clientTargets[name] = target;
-  saveData('wardaClientTargets', clientTargets);
-  document.getElementById('newTargetClient').value = '';
-  document.getElementById('newTargetAmt').value = '400000';
-  renderClientTargets();
-  showToast(`✅ تم إضافة ${name} بهدف ${fmt(target)} ج`);
-}
-
-function deleteClientTarget(name) {
-  confirm2('حذف الهدف', `هل تريد حذف هدف "${name}"؟`, () => {
-    delete clientTargets[name];
-    saveData('wardaClientTargets', clientTargets);
-    renderClientTargets();
-    showToast('✅ تم الحذف');
-  });
-}
-
-function renderClientTargets() {
-  const fromInvoices = [...new Set(invoices.map(i => i.client))];
-  const allClients   = [...new Set([...Object.keys(clientTargets), ...fromInvoices])];
-  let html = '';
-  allClients.forEach(name => {
-    const target = clientTargets[name] || 0;
-    const sold   = getClientMonthTotal(name);
-    const rem    = target ? Math.max(0, target - sold) : null;
-    const pct    = target ? Math.min(100, Math.round((sold/target)*100)) : 0;
-    html += `
-      <div style="padding:12px 14px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="flex:1;font-size:14px;font-weight:700">👤 ${name}</span>
-          <button onclick="deleteClientTarget('${name}')" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer">🗑️</button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-          <span style="font-size:12px;color:var(--text-mid);min-width:55px">الهدف:</span>
-          <input type="number" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-family:Cairo;font-size:13px;text-align:center"
-                 value="${target}" placeholder="الهدف ج"
-                 onchange="setClientTarget('${name}', parseFloat(this.value)||0); renderClientTargets()">
-          <span style="font-size:12px;color:var(--text-mid)">ج</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
-          <span style="color:var(--text-mid)">مبيعات ${getCurrentMonthLabel()}: <b style="color:var(--blue)">${fmt(sold)} ج</b></span>
-          ${rem !== null ? `<span>المتبقي: <b style="color:${rem===0?'var(--red)':'var(--green)'}">${fmt(rem)} ج</b></span>` : '<span style="color:var(--text-light)">حدد هدفاً</span>'}
-        </div>
-        ${target ? `
-          <div style="background:#ddd;border-radius:10px;height:8px;overflow:hidden">
-            <div style="height:100%;width:${pct}%;background:${pct>=100?'var(--red)':'var(--green)'};border-radius:10px"></div>
-          </div>
-          <div style="text-align:left;font-size:11px;color:var(--text-light);margin-top:3px">${pct}%</div>
-        ` : ''}
-      </div>`;
-  });
-  if (!html) html = '<div style="padding:20px;text-align:center;color:var(--text-light)">لا يوجد عملاء — أضف من فوق</div>';
-  const el = document.getElementById('clientTargetsList');
-  if (el) el.innerHTML = html;
-}
-
-
-// Apply all saved settings on startup
-applyGeneralSettings();
-applyProductSettings();
-(function applySavedPrices() {
-  const p = loadData('wardaPrices', null);
-  if (p) p.forEach((v, i) => { if (PRODUCTS[i] && v != null) PRODUCTS[i].price = v; });
-})();
-
-// تحديث التاريخ في الهيدر
-try { document.getElementById('headerDate').textContent = todayStr(); } catch(e){}
-
-renderStock();
-
-// ==========================================
-// PWA: Service Worker (offline support)
-// ==========================================
-if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'warda-v2';
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll([self.location.pathname])));
-      self.skipWaiting();
-    });
-    self.addEventListener('activate', e => { self.clients.claim(); });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
-    });
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
-}
-</script>
-</body>
-</html>
+        <div cla
