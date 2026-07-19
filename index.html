@@ -875,6 +875,7 @@
     <div class="header-date">
       <div class="date-val num" id="headerDate">—</div>
       <div class="date-lbl">التاريخ</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.5);text-align:center">v4.0</div>
     </div>
   </div>
   <nav class="nav-tabs">
@@ -2796,6 +2797,4 @@ function renderAnalytics() {
     : '';
 
   topProds.forEach(([name, data], i) => {
-    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const pct = Math.round((data.val / maxProdVal)*100);
-    prodHtml += `
+    const rankClass = i===0?'gold':i===1?'silver':i==
