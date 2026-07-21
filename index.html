@@ -1401,7 +1401,7 @@ let currentSessionId = loadData('wardaCurrentSession', null);
     const oldSession = {
       id: 1,
       label: 'الجلسة الأولى (مؤرشفة)',
-      date: untagged[0]?.date || todayStr(),
+      date: (untagged[0] && untagged[0].date ? untagged[0].date : todayStr()),
       createdAt: new Date().toISOString(),
       status: 'closed',
       closedAt: new Date().toISOString()
@@ -1754,11 +1754,11 @@ function onQtyChange(i) {
 function calcInvSummary() {
   let subtotal = 0;
   PRODUCTS.forEach((p,i) => {
-    const qty = parseInt(document.getElementById('qty_'+i)?.value) || 0;
+    const qty = parseInt((document.getElementById('qty_'+i) || {}).value) || 0;
     subtotal += qty * p.price;
   });
-  const pctDisc = parseFloat(document.getElementById('discountPct')?.value) || 0;
-  const fixDisc = parseFloat(document.getElementById('discountFixed')?.value) || 0;
+  const pctDisc = parseFloat((document.getElementById('discountPct') || {}).value) || 0;
+  const fixDisc = parseFloat((document.getElementById('discountFixed') || {}).value) || 0;
   const discAmt = subtotal * (pctDisc/100) + fixDisc;
   const total = Math.max(0, subtotal - discAmt);
   document.getElementById('invSubtotal').textContent = fmt(subtotal) + ' ج';
@@ -1852,15 +1852,15 @@ function buildClientsList() {
 // SCREEN 3: LOG
 // ==========================================
 function renderLog(filterSessionId) {
-  const q = document.getElementById('logSearch')?.value?.trim().toLowerCase() || '';
+  const q = (document.getElementById('logSearch') ? (document.getElementById('logSearch').value || '').trim().toLowerCase() : '') || '';
   let source = [...invoices].reverse();
   if (filterSessionId) source = source.filter(inv => inv.sessionId === filterSessionId);
   const filtered = source.filter(inv =>
-    !q || inv.client.toLowerCase().includes(q) || String(inv.id).includes(q)
+    !q || (inv.client ? inv.client.toLowerCase().includes(q) : false) || String(inv.id).includes(q)
   );
 
   const sessionLabel = filterSessionId
-    ? (sessions.find(s => s.id === filterSessionId)?.label || '')
+    ? ((sessions.find(function(s){return s.id===filterSessionId})||{}).label || '')
     : '';
 
   if (filtered.length === 0) {
@@ -2029,14 +2029,14 @@ function searchInvoice() {
 function calcEditSummary() {
   let sub = 0;
   PRODUCTS.forEach((p,i) => {
-    const qty = parseInt(document.getElementById('eqty_'+i)?.value) || 0;
+    const qty = parseInt((document.getElementById('eqty_'+i) || {}).value) || 0;
     const t = qty * p.price;
     sub += t;
     const el = document.getElementById('eitotal_'+i);
     if (el) el.textContent = qty > 0 ? fmt(t)+' ج' : '—';
   });
-  const pct = parseFloat(document.getElementById('eDiscPct')?.value) || 0;
-  const fix = parseFloat(document.getElementById('eDiscFix')?.value) || 0;
+  const pct = parseFloat((document.getElementById('eDiscPct') || {}).value) || 0;
+  const fix = parseFloat((document.getElementById('eDiscFix') || {}).value) || 0;
   const total = Math.max(0, sub - sub*(pct/100) - fix);
   const el = document.getElementById('eTotal');
   if (el) el.textContent = fmt(total) + ' جنيه';
@@ -2105,7 +2105,7 @@ function renderPricesList() {
 
 function savePrices() {
   const newPrices = PRODUCTS.map((p, i) => {
-    const val = parseFloat(document.getElementById('price_'+i)?.value);
+    const val = parseFloat((document.getElementById('price_'+i) || {}).value);
     return isNaN(val) ? p.price : val;
   });
   newPrices.forEach((p, i) => { PRODUCTS[i].price = p; });
@@ -2148,7 +2148,7 @@ function importBackup(event) {
     try {
       const data = JSON.parse(e.target.result);
       if (!data.version || !data.invoices) throw new Error('ملف غير صالح');
-      confirm2('استيراد البيانات', `سيتم استبدال كل البيانات الحالية ببيانات النسخة المؤرخة ${data.exportDate?.slice(0,10) || ''}. متأكد؟`, () => {
+      confirm2('استيراد البيانات', `سيتم استبدال كل البيانات الحالية ببيانات النسخة المؤرخة ${(data.exportDate ? data.exportDate.slice(0,10) : '')}. متأكد؟`, () => {
         saveData('wardaStock', data.stock || DEFAULT_STOCK.slice());
         saveData('wardaInvoices', data.invoices || []);
         saveData('wardaCounter', data.counter || 1);
@@ -2165,7 +2165,7 @@ function importBackup(event) {
         if (data.clientTargets) { saveData('wardaClientTargets', data.clientTargets); clientTargets = data.clientTargets; }
         const info = document.getElementById('backupInfo');
         info.style.display = 'block';
-        info.innerHTML = `✅ تم الاستيراد بنجاح | ${data.invoices?.length || 0} فاتورة | تاريخ النسخة: ${data.exportDate?.slice(0,10) || 'غير معروف'}`;
+        info.innerHTML = `✅ تم الاستيراد بنجاح | ${(data.invoices ? data.invoices.length : 0)} فاتورة | تاريخ النسخة: ${(data.exportDate ? data.exportDate.slice(0,10) : 'غير معروف')}`;
         showToast('✅ تم استيراد البيانات بنجاح');
         renderPricesList();
       });
@@ -2292,7 +2292,7 @@ function renderJardDayStatus() {
       <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px">
         <div>
           <div style="font-weight:700">${p.name}</div>
-          <div style="font-size:11px;color:var(--text-light)">${PROD_META[i]?.weight}</div>
+          <div style="font-size:11px;color:var(--text-light)">${(PROD_META[i] && PROD_META[i].weight)}</div>
         </div>
         <div style="text-align:center;color:var(--blue);font-weight:700">${loaded}</div>
         <div style="text-align:center;color:var(--red);font-weight:700">${soldQ}</div>
@@ -2340,7 +2340,7 @@ function renderJardList() {
 }
 
 function onCartChange(i) {
-  const cart  = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
+  const cart  = parseInt((document.getElementById('jcart_'+i) || {}).value) || 0;
   const pakEl = document.getElementById('jpak_'+i);
   if (pakEl) pakEl.value = cart * PROD_META[i].pakPerCart;
   const resEl = document.getElementById('jresult_'+i);
@@ -2349,7 +2349,7 @@ function onCartChange(i) {
 }
 
 function onPakChange(i) {
-  const pak      = parseInt(document.getElementById('jpak_'+i)?.value) || 0;
+  const pak      = parseInt((document.getElementById('jpak_'+i) || {}).value) || 0;
   const autoCart = Math.floor(pak / PROD_META[i].pakPerCart);
   const remPak   = pak % PROD_META[i].pakPerCart;
   const cartEl   = document.getElementById('jcart_'+i);
@@ -2363,8 +2363,8 @@ function onPakChange(i) {
 function updateJardTotals() {
   let totCart = 0, totPak = 0, totFinal = 0;
   PRODUCTS.forEach((p, i) => {
-    const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
-    const pak  = parseInt(document.getElementById('jpak_'+i)?.value)  || 0;
+    const cart = parseInt((document.getElementById('jcart_'+i) || {}).value) || 0;
+    const pak  = parseInt((document.getElementById('jpak_'+i) || {}).value)  || 0;
     totCart  += cart;
     totPak   += pak;
     totFinal += cart + pak / PROD_META[i].pakPerCart;
@@ -2394,8 +2394,8 @@ function saveJardEntry() {
   let totCart = 0, totPak = 0, totFinal = 0, hasData = false;
   PRODUCTS.forEach((p, i) => {
     const meta = PROD_META[i];
-    const cart = parseInt(document.getElementById('jcart_'+i)?.value) || 0;
-    const pak  = parseInt(document.getElementById('jpak_'+i)?.value)  || 0;
+    const cart = parseInt((document.getElementById('jcart_'+i) || {}).value) || 0;
+    const pak  = parseInt((document.getElementById('jpak_'+i) || {}).value)  || 0;
     const finalCart = cart + pak / meta.pakPerCart;
     if (cart > 0 || pak > 0) hasData = true;
     totCart  += cart;
@@ -2423,7 +2423,7 @@ function saveJardEntry() {
       id:         Date.now(),
       type:       'jard',
       sessionId:  currentSessionId,
-      sessionLabel: session?.label || '',
+      sessionLabel: (session && session.label) || '',
       date:       todayStr(),
       time:       new Date().toLocaleTimeString('ar', {hour:'2-digit', minute:'2-digit'}),
       loadItems:  salesItems,          // التحميل والمبيعات من الجلسة
@@ -2450,15 +2450,15 @@ function renderJardHistory() {
   const el = document.getElementById('jardHistory');
   if (!el) return;
 
-  const q = document.getElementById('jardSearchInput')?.value?.trim().toLowerCase() || '';
+  const q = (document.getElementById('jardSearchInput') ? (document.getElementById('jardSearchInput').value || '').trim().toLowerCase() : '') || '';
   const list = [...jardHistory].reverse().filter(e =>
-    !q || e.date?.includes(q) || e.sessionLabel?.toLowerCase().includes(q) ||
-    e.time?.includes(q)
+    !q || (e.date && e.date.includes(q)) || (e.sessionLabel && e.sessionLabel.toLowerCase().includes(q)) ||
+    (e.time && e.time.includes(q))
   );
 
   // أيضاً أضف الجلسات المقفلة كسجلات
   const closedSessions = [...sessions].filter(s => s.status === 'closed').reverse().filter(s =>
-    !q || s.date?.includes(q) || s.label?.toLowerCase().includes(q)
+    !q || (s.date && s.date.includes(q)) || (s.label && s.label.toLowerCase().includes(q))
   );
 
   if (list.length === 0 && closedSessions.length === 0) {
@@ -2495,9 +2495,9 @@ function renderJardHistory() {
             <span>المنتج</span><span style="text-align:center">تحميل</span><span style="text-align:center">مُباع</span><span style="text-align:center">متبقي</span>
           </div>
           ${PRODUCTS.map((p,i) => {
-            const loaded = jardEntry?.loadItems?.[i]?.loaded ?? '—';
+            const loaded = (jardEntry && jardEntry.loadItems && jardEntry.loadItems[i] && jardEntry.loadItems[i].loaded) !== undefined ? loaded : '—';
             const sold   = soldMap[p.name] || 0;
-            const rem    = jardEntry?.loadItems?.[i]?.remaining ?? '—';
+            const rem    = (jardEntry && jardEntry.loadItems && jardEntry.loadItems[i] && jardEntry.loadItems[i].remaining) !== undefined ? loaded : '—';
             return `
               <div style="display:grid;grid-template-columns:1fr 50px 50px 50px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:12px">
                 <span>${p.name}</span>
@@ -2513,7 +2513,7 @@ function renderJardHistory() {
 
   // سجلات جرد بدون جلسة مرتبطة
   list.filter(e => !closedSessions.find(s => s.id === e.sessionId)).forEach(entry => {
-    const filledItems = entry.jardItems?.filter(it => it.cart > 0 || it.pak > 0) || [];
+    const filledItems = (entry.jardItems ? entry.jardItems.filter(function(it){return it.cart>0||it.pak>0}) : []);
     html += `
       <div class="jard-hist-item" onclick="toggleJardHist('jh_${entry.id}')">
         <div class="jard-hist-header">
@@ -2527,7 +2527,7 @@ function renderJardHistory() {
           ${filledItems.map(it => `
             <div class="jard-hist-detail-row">
               <span>${it.name}</span>
-              <span>${it.cart} كرتونة + ${it.pak} باكو = <b>${it.finalCart?.toFixed?.(it.finalCart%1===0?0:2) ?? it.finalCart}</b> كرتونة</span>
+              <span>${it.cart} كرتونة + ${it.pak} باكو = <b>${(it.finalCart != null ? (it.finalCart % 1 === 0 ? it.finalCart : it.finalCart.toFixed(2)) : it.finalCart) || it.finalCart}</b> كرتونة</span>
             </div>`).join('')}
         </div>
       </div>`;
@@ -2546,7 +2546,7 @@ function deleteJardEntry(id) {
 }
 
 function toggleJardHist(id) {
-  document.getElementById(id)?.classList.toggle('open');
+  (document.getElementById(id) ? document.getElementById(id).classList : null).toggle('open');
 }
 
 // دالة قديمة للتوافق
@@ -2618,8 +2618,8 @@ function applyProductSettings() {
   // احفظ القائمة الكاملة (٢٠ صنف أو أكثر) في localStorage
   const fullList = PRODUCTS.map((p, i) => ({
     name: p.name, price: p.price,
-    pakPerCart: PROD_META[i]?.pakPerCart || 1,
-    weight:     PROD_META[i]?.weight     || '—'
+    pakPerCart: (PROD_META[i] && PROD_META[i].pakPerCart) || 1,
+    weight:     (PROD_META[i] && PROD_META[i].weight)     || '—'
   }));
   saveData('wardaProducts', fullList);
   customProducts = fullList;
@@ -2669,10 +2669,10 @@ function deleteProduct(i) {
 
 function saveProductSettings() {
   const saved = PRODUCTS.map((p, i) => ({
-    name:       document.getElementById('ps_name_'+i)?.value.trim()  || p.name,
-    price:      parseFloat(document.getElementById('ps_price_'+i)?.value) || p.price,
-    pakPerCart: parseInt(document.getElementById('ps_pak_'+i)?.value) || PROD_META[i].pakPerCart,
-    weight:     document.getElementById('ps_weight_'+i)?.value.trim() || PROD_META[i].weight,
+    name:       ((document.getElementById('ps_name_'+i) || {value:""}).value || "").trim()  || p.name,
+    price:      parseFloat((document.getElementById('ps_price_'+i) || {}).value) || p.price,
+    pakPerCart: parseInt((document.getElementById('ps_pak_'+i) || {}).value) || PROD_META[i].pakPerCart,
+    weight:     ((document.getElementById('ps_weight_'+i) || {value:""}).value || "").trim() || PROD_META[i].weight,
   }));
 
   saved.forEach((cp, i) => {
@@ -2770,31 +2770,4 @@ function renderAnalytics() {
     </div>
     <div class="stat-box">
       <div class="stat-val num">${totalInvs}</div>
-      <div class="stat-lbl">عدد الفواتير</div>
-    </div>
-    <div class="stat-box blue">
-      <div class="stat-val num">${uniqueClients}</div>
-      <div class="stat-lbl">عدد العملاء</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val num">${fmt(Math.round(avgInv))}</div>
-      <div class="stat-lbl">متوسط الفاتورة ج</div>
-    </div>
-  `;
-
-  // ── Daily chart ──
-  renderDailyChart(filtered);
-
-  // ── Top products ──
-  const prodMap = {};
-  filtered.forEach(inv => {
-    inv.items.forEach(it => {
-      if (!prodMap[it.name]) prodMap[it.name] = { qty: 0, val: 0 };
-      prodMap[it.name].qty += it.qty;
-      prodMap[it.name].val += it.qty * it.price;
-    });
-  });
-  const topProds = Object.entries(prodMap).sort((a,b) => b[1].val - a[1].val).slice(0,8);
-  const maxProdVal = topProds[0]?.[1].val || 1;
-
-  let prodHtml
+      <div class="stat-lbl">عدد الفواتير
