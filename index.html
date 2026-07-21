@@ -1335,6 +1335,10 @@
 
 
 <script>
+// TEST: هل JavaScript شغال؟
+document.addEventListener('DOMContentLoaded', function() {
+  document.body.style.border = '5px solid red';
+});
 window.onerror = function(msg, src, line, col, err) {
   const div = document.getElementById('jsErrorBox');
   if (div) div.innerHTML = `<div style="background:red;color:#fff;padding:10px;font-size:12px;direction:ltr">JS Error: ${msg} (line ${line})</div>`;
@@ -2766,8 +2770,4 @@ function renderAnalytics() {
   document.getElementById('anStats').innerHTML = `
     <div class="stat-box gold">
       <div class="stat-val num">${fmt(totalSales)}</div>
-      <div class="stat-lbl">إجمالي المبيعات ج</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-val num">${totalInvs}</div>
-      <div class="stat-lbl">عدد الفواتير
+      <div class="stat-lbl">إجمالي المبيع
