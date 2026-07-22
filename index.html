@@ -905,6 +905,7 @@
 
 <!-- ===== SCREEN 1: STOCK ===== -->
 <div class="screen active" id="screen-stock">
+  <div id="sessionBar"></div>
 
   <div class="stats-grid" id="stockStats"></div>
 
@@ -1055,60 +1056,43 @@
 <!-- ===== SCREEN 5: الجرد ===== -->
 <div class="screen" id="screen-jard">
 
-  <!-- Summary totals -->
-  <div class="stats-grid" id="jardStats"></div>
-
-  <!-- Mode toggle -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-body" style="padding:10px 14px">
-      <div style="display:flex;gap:8px">
-        <button id="jardModeLoad" class="btn btn-primary btn-sm" style="flex:1" onclick="setJardMode('load')">🚛 تحميل السيارة</button>
-        <button id="jardModeJard" class="btn btn-secondary btn-sm" style="flex:1" onclick="setJardMode('jard')">📦 جرد نهاية اليوم</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Table card -->
+  <!-- وضع اليوم الحالي -->
   <div class="card">
     <div class="card-header">
-      <h2 id="jardCardTitle">🚛 تحميل السيارة</h2>
-      <button class="btn btn-secondary btn-sm" onclick="resetJardInputs()" style="width:auto;color:var(--red);font-size:12px">تصفير</button>
+      <h2>📊 وضع الجلسة الحالية</h2>
+      <button class="btn btn-secondary btn-sm" onclick="showScreen('stock')" style="width:auto;color:var(--green);font-weight:700">المخزن</button>
     </div>
+    <div id="jardDayStatus"></div>
+  </div>
 
-    <!-- info note -->
-    <div id="jardReviewNote" style="display:none;padding:8px 14px;background:#fff3e0;border-bottom:1px solid #ffe0b2;font-size:12px;color:#e65100;font-weight:600">
-      👁️ وضع المراجعة فقط — لن يُحدَّث المخزن
+  <!-- تسجيل جرد نهاية اليوم -->
+  <div class="card">
+    <div class="card-header" style="background:linear-gradient(135deg,#1a4fa0,#2e6fd4)">
+      <h2>📦 جرد نهاية اليوم</h2>
+      <button class="btn btn-secondary btn-sm" onclick="resetJardInputs()" style="width:auto;color:var(--red);font-size:12px;background:rgba(255,255,255,0.9)">تصفير</button>
     </div>
-
-    <!-- Table header -->
-    <div id="jardTableHeader" class="jard-header-row">
-      <span>المنتج</span>
-      <span>الباكو/كرتونة</span>
-      <span>كرتونة</span>
-      <span>باكو</span>
-      <span>إجمالي كرتونة</span>
+    <div style="padding:8px 14px;font-size:12px;color:var(--text-mid);background:var(--blue-light);border-bottom:1px solid var(--border)">
+      💡 أدخل الكميات المتبقية الفعلية في السيارة
     </div>
-
+    <div class="jard-header-row">
+      <span>المنتج</span><span>الباكو/ك</span><span>كرتونة</span><span>باكو</span><span>إجمالي</span>
+    </div>
     <div id="jardList"></div>
-
-    <!-- Totals row -->
-    <div id="jardTotalsRow" class="jard-total-row">
-      <span>الإجمالي</span>
-      <span>—</span>
-      <span id="jTotCart">0</span>
-      <span id="jTotPak">0</span>
-      <span id="jTotFinal">0</span>
+    <div class="jard-total-row">
+      <span>الإجمالي</span><span>—</span>
+      <span id="jTotCart">0</span><span id="jTotPak">0</span><span id="jTotFinal">0</span>
     </div>
-
-    <div id="jardActions" style="padding:14px;display:flex;gap:10px">
-      <button class="btn btn-primary" style="flex:2" onclick="saveJard()">💾 حفظ وتحديث المخزن</button>
-      <button class="btn btn-secondary" style="flex:1" onclick="resetJardInputs()">مسح</button>
+    <div style="padding:14px">
+      <button class="btn btn-primary" onclick="saveJardEntry()">💾 حفظ الجرد</button>
     </div>
   </div>
 
-  <!-- History -->
+  <!-- سجل الأيام -->
   <div class="card">
-    <div class="card-header"><h2>📜 سجل التحميل والجرد</h2></div>
+    <div class="card-header"><h2>📜 سجل الجلسات والجرد</h2></div>
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <input class="form-input" id="jardSearchInput" placeholder="ابحث بتاريخ أو اسم جلسة..." oninput="renderJardHistory()" style="margin:0">
+    </div>
     <div id="jardHistory"></div>
   </div>
 
@@ -1353,6 +1337,8 @@ function saveData(key, val) {
 let stock   = loadData('wardaStock',   DEFAULT_STOCK.slice());
 let invoices = loadData('wardaInvoices', []);
 let invCounter = loadData('wardaCounter', 1);
+let sessions = loadData('wardaSessions', []);
+let currentSessionId = loadData('wardaCurrentSession', null);
 
 // ==========================================
 // HELPERS
@@ -1393,12 +1379,12 @@ function showScreen(name) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   event.currentTarget.classList.add('active');
-  if (name === 'stock')    renderStock();
+  if (name === 'stock')    { renderStock(); renderSessionBar(); }
   if (name === 'invoice')  renderInvoiceItems();
   if (name === 'log')      renderLog();
   if (name === 'settings') { renderPricesList(); renderProductSettingsList(); loadGeneralSettingsUI(); renderClientTargets(); }
   if (name === 'analytics') { renderAnalytics(); }
-  if (name === 'jard') { renderJardStats(); setJardMode(jardMode); renderJardHistoryList(); }
+  if (name === 'jard') { renderJardDayStatus(); renderJardList(); renderJardHistory(); }
   if (name === 'edit') {
     document.getElementById('editResult').innerHTML = '';
     document.getElementById('editSearch').value = '';
@@ -1409,10 +1395,12 @@ function showScreen(name) {
 // SCREEN 1: STOCK
 // ==========================================
 function getSold() {
-  const sold = new Array(PRODUCTS.length).fill(0);
-  invoices.forEach(inv => {
-    inv.items.forEach(item => {
-      const idx = PRODUCTS.findIndex(p => p.name === item.name);
+  var sold = new Array(PRODUCTS.length).fill(0);
+  var sessionInvs = currentSessionId ? invoices.filter(function(inv) { return inv.sessionId === currentSessionId; }) : [];
+  sessionInvs.forEach(function(inv) {
+    inv.items.forEach(function(item) {
+      var idx = -1;
+      for (var i = 0; i < PRODUCTS.length; i++) { if (PRODUCTS[i].name === item.name) { idx = i; break; } }
       if (idx >= 0) sold[idx] += item.qty;
     });
   });
@@ -1576,6 +1564,7 @@ function saveInvoice() {
   const doSave = () => {
     const inv = {
       id: invCounter++,
+      sessionId: currentSessionId,
       client,
       location: document.getElementById('clientLocation').value.trim(),
       phone: document.getElementById('clientPhone').value.trim(),
@@ -2800,30 +2789,58 @@ applyProductSettings();
   if (p) p.forEach((v, i) => { if (PRODUCTS[i] && v != null) PRODUCTS[i].price = v; });
 })();
 
-// تحديث التاريخ في الهيدر
 try { document.getElementById('headerDate').textContent = todayStr(); } catch(e){}
 
-renderStock();
-
 // ==========================================
-// PWA: Service Worker (offline support)
+// SESSIONS
 // ==========================================
-if ('serviceWorker' in navigator) {
-  const swCode = `
-    const CACHE = 'warda-v5';
-    self.addEventListener('install', e => {
-      e.waitUntil(caches.open(CACHE).then(c => c.addAll([self.location.pathname])));
-      self.skipWaiting();
-    });
-    self.addEventListener('activate', e => { self.clients.claim(); });
-    self.addEventListener('fetch', e => {
-      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request))));
-    });
-  `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl).catch(() => {});
+function getCurrentSession() {
+  for (var i = 0; i < sessions.length; i++) {
+    if (sessions[i].id === currentSessionId) return sessions[i];
+  }
+  return null;
 }
-</script>
-</body>
-</html>
+
+function openNewSessionPrompt() {
+  document.getElementById('newSessionInput').value = 'جلسة ' + todayStr();
+  openModal('newSessionModal');
+}
+
+function confirmNewSession() {
+  var label = document.getElementById('newSessionInput').value.trim() || ('جلسة ' + todayStr());
+  closeModal('newSessionModal');
+  if (currentSessionId) { showToast('أغلق الجلسة الحالية أولاً', 'error'); return; }
+  var id = Date.now();
+  sessions.push({ id: id, label: label, date: todayStr(), status: 'active' });
+  currentSessionId = id;
+  saveData('wardaSessions', sessions);
+  saveData('wardaCurrentSession', currentSessionId);
+  renderStock();
+  renderSessionBar();
+  showToast('✅ تم فتح: ' + label);
+}
+
+function closeCurrentSession() {
+  var session = getCurrentSession();
+  if (!session) { showToast('لا توجد جلسة نشطة', 'error'); return; }
+  confirm2('🔴 قفل الجلسة', 'هل تريد قفل "' + session.label + '"؟', function() {
+    session.status = 'closed';
+    session.closedAt = new Date().toISOString();
+    var sessionInvs = invoices.filter(function(inv) { return inv.sessionId === session.id; });
+    session.totalSales = sessionInvs.reduce(function(s, inv) { return s + inv.total; }, 0);
+    session.invoiceCount = sessionInvs.length;
+    saveData('wardaSessions', sessions);
+    currentSessionId = null;
+    saveData('wardaCurrentSession', null);
+    renderStock();
+    renderSessionBar();
+    showToast('✅ تم قفل: ' + session.label);
+  });
+}
+
+function renderSessionBar() {
+  var bar = document.getElementById('sessionBar');
+  if (!bar) return;
+  var session = getCurrentSession();
+  if (session) {
+    bar.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--green-light);border-botto
